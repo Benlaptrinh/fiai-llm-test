@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: ["dev", "main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Syntax check
+        run: python -m compileall app scripts
+
+      - name: Generate data
+        run: python scripts/generate_data.py
+
+      # Optional: enable when CI runtime budget is sufficient.
+      # - name: Ingest (smoke test)
+      #   run: python scripts/ingest.py
