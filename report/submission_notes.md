@@ -17,3 +17,11 @@ Router, multi-agent orchestration, RAG, session, cache, and API layers remain un
 - Machine: MacBook Pro M1 Max, 64GB RAM
 - Model: qwen2.5:7b
 - Backend: Ollama local inference
+
+## Benchmark Snapshot (2026-04-30)
+- Total queries: 130
+- Router Accuracy: 0.8538
+- Retrieval Coverage: 0.8538
+- Average Latency: 2.8177s
+- P95 Latency: 10.3994s
+- Cache Hit Latency: 0.0029s

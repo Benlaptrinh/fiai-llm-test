@@ -93,9 +93,9 @@ Current sample output:
 
 - Router Accuracy: `0.8538`
 - Retrieval Coverage: `0.8538`
-- Average Latency: `0.0087s`
-- P95 Latency: `0.0203s`
-- Cache Hit Latency: `0.0017s`
+- Average Latency: `2.8177s`
+- P95 Latency: `10.3994s`
+- Cache Hit Latency: `0.0029s`
 
 ## Metric Notes
 Retrieval Coverage is used as a proxy metric for retrieval quality in this prototype.
