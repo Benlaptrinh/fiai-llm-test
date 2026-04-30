@@ -155,25 +155,19 @@ def generate_menu() -> None:
                         if "Sữa" in name or "Latte" in name
                         else "cà phê, nước, đá"
                     )
-                    description = (
-                        f"{name} size {size}, phù hợp khách thích cà phê và hương vị đậm."
-                    )
+                    description = f"{name} size {size}, phù hợp khách thích cà phê và hương vị đậm."
                 elif category == "Tea":
                     caffeine = random.choice(["low", "medium"])
                     sweetness = random.choice(["low", "medium", "high"])
                     tags = "tea,fruit,refreshing,low-caffeine"
                     ingredients = "trà, trái cây, syrup, đá"
-                    description = (
-                        f"{name} size {size}, vị thanh mát, phù hợp khách thích đồ uống nhẹ."
-                    )
+                    description = f"{name} size {size}, vị thanh mát, phù hợp khách thích đồ uống nhẹ."
                 elif category == "Freeze":
                     caffeine = random.choice(["none", "low", "medium"])
                     sweetness = random.choice(["medium", "high"])
                     tags = "freeze,cold,sweet,ice-blended"
                     ingredients = "đá xay, sữa, kem, syrup"
-                    description = (
-                        f"{name} size {size}, đồ uống đá xay mát lạnh, phù hợp khách thích ngọt."
-                    )
+                    description = f"{name} size {size}, đồ uống đá xay mát lạnh, phù hợp khách thích ngọt."
                 else:
                     caffeine = "none"
                     sweetness = random.choice(["low", "medium"])
@@ -231,16 +225,28 @@ def generate_faq() -> None:
             "Wifi tên gì?",
             "Wifi của quán là Highlands_Guest, mật khẩu vui lòng hỏi nhân viên.",
         ),
-        ("Có thanh toán bằng thẻ không?", "Quán hỗ trợ tiền mặt, thẻ ngân hàng và ví điện tử."),
-        ("Có thanh toán QR không?", "Quán có hỗ trợ thanh toán QR qua một số ví điện tử."),
+        (
+            "Có thanh toán bằng thẻ không?",
+            "Quán hỗ trợ tiền mặt, thẻ ngân hàng và ví điện tử.",
+        ),
+        (
+            "Có thanh toán QR không?",
+            "Quán có hỗ trợ thanh toán QR qua một số ví điện tử.",
+        ),
         ("Có giao hàng không?", "Quán hỗ trợ giao hàng qua các ứng dụng đối tác."),
         (
             "Có chỗ ngồi làm việc không?",
             "Một số chi nhánh có khu vực ngồi làm việc và ổ cắm điện.",
         ),
-        ("Có ổ cắm điện không?", "Một số chi nhánh có ổ cắm điện gần khu vực ngồi làm việc."),
+        (
+            "Có ổ cắm điện không?",
+            "Một số chi nhánh có ổ cắm điện gần khu vực ngồi làm việc.",
+        ),
         ("Có xuất hóa đơn không?", "Quán có hỗ trợ xuất hóa đơn theo yêu cầu."),
-        ("Có món ít ngọt không?", "Khách có thể yêu cầu giảm đường hoặc chọn món ít ngọt."),
+        (
+            "Có món ít ngọt không?",
+            "Khách có thể yêu cầu giảm đường hoặc chọn món ít ngọt.",
+        ),
         (
             "Có món không caffeine không?",
             "Có thể chọn trà trái cây, freeze hoặc một số món không cà phê.",
@@ -249,18 +255,27 @@ def generate_faq() -> None:
             "Có đồ ăn nhẹ không?",
             "Quán có bánh mì, croissant, tiramisu và một số món ăn nhẹ.",
         ),
-        ("Có giảm giá sinh viên không?", "Khuyến mãi phụ thuộc từng thời điểm và từng chi nhánh."),
+        (
+            "Có giảm giá sinh viên không?",
+            "Khuyến mãi phụ thuộc từng thời điểm và từng chi nhánh.",
+        ),
         (
             "Có chỗ đậu xe không?",
             "Một số chi nhánh có chỗ đậu xe, vui lòng hỏi nhân viên tại quầy.",
         ),
         ("Có phòng họp không?", "Một số chi nhánh có không gian phù hợp họp nhóm nhỏ."),
-        ("Có đặt bàn trước không?", "Khách có thể liên hệ chi nhánh để hỏi về đặt bàn trước."),
+        (
+            "Có đặt bàn trước không?",
+            "Khách có thể liên hệ chi nhánh để hỏi về đặt bàn trước.",
+        ),
         (
             "Có đổi món sau khi thanh toán không?",
             "Việc đổi món sau thanh toán phụ thuộc tình trạng xử lý đơn hàng.",
         ),
-        ("Có hoàn tiền không?", "Chính sách hoàn tiền phụ thuộc từng trường hợp cụ thể."),
+        (
+            "Có hoàn tiền không?",
+            "Chính sách hoàn tiền phụ thuộc từng trường hợp cụ thể.",
+        ),
         ("Có size lớn không?", "Nhiều món có size S, M và L tùy loại đồ uống."),
         ("Có món nóng không?", "Một số món cà phê và trà có thể phục vụ nóng."),
         ("Có món lạnh không?", "Hầu hết đồ uống đều có phiên bản lạnh hoặc đá."),
@@ -276,7 +291,10 @@ def generate_faq() -> None:
             "Có nhận đặt số lượng lớn không?",
             "Quán có thể hỗ trợ đơn số lượng lớn tùy chi nhánh.",
         ),
-        ("Có hỗ trợ sinh nhật không?", "Chính sách hỗ trợ sinh nhật phụ thuộc từng chương trình."),
+        (
+            "Có hỗ trợ sinh nhật không?",
+            "Chính sách hỗ trợ sinh nhật phụ thuộc từng chương trình.",
+        ),
         ("Có giao hàng nội bộ không?", "Quán thường giao hàng qua đối tác giao nhận."),
         (
             "Có giới hạn thời gian ngồi không?",
@@ -286,7 +304,10 @@ def generate_faq() -> None:
             "Có nhận thanh toán công ty không?",
             "Quán có hỗ trợ hóa đơn theo thông tin khách cung cấp.",
         ),
-        ("Có chương trình thành viên không?", "Chương trình thành viên phụ thuộc chính sách hiện hành."),
+        (
+            "Có chương trình thành viên không?",
+            "Chương trình thành viên phụ thuộc chính sách hiện hành.",
+        ),
         (
             "Có nhận góp ý dịch vụ không?",
             "Khách có thể góp ý trực tiếp với nhân viên hoặc qua kênh hỗ trợ.",
@@ -412,7 +433,9 @@ def generate_queries() -> None:
 
     random.shuffle(queries)
 
-    with (DATA_DIR / "synthetic_queries.csv").open("w", newline="", encoding="utf-8") as file:
+    with (DATA_DIR / "synthetic_queries.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as file:
         writer = csv.DictWriter(file, fieldnames=["query", "expected_intent"])
         writer.writeheader()
         for query, expected in queries:

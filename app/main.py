@@ -66,7 +66,9 @@ def chat(request: ChatRequest) -> ChatResponse:
     answer = result["answer"]
     sources = result.get("sources", [])
 
-    session_store.add_turn(session_id=request.session_id, user=request.query, assistant=answer)
+    session_store.add_turn(
+        session_id=request.session_id, user=request.query, assistant=answer
+    )
     cache.set(
         request.query,
         {

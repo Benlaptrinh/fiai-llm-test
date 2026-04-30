@@ -40,7 +40,9 @@ class SessionStore:
         if session_id not in self.sessions:
             self.sessions[session_id] = {"history": [], "last_seen": now}
 
-        self.sessions[session_id]["history"].append({"user": user, "assistant": assistant})
+        self.sessions[session_id]["history"].append(
+            {"user": user, "assistant": assistant}
+        )
         self.sessions[session_id]["history"] = self.sessions[session_id]["history"][
             -MAX_HISTORY_TURNS:
         ]

@@ -36,7 +36,9 @@ def format_sources(docs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Format sources for API response."""
     sources = []
     for doc in docs:
-        sources.append({"metadata": doc.get("metadata", {}), "distance": doc.get("distance")})
+        sources.append(
+            {"metadata": doc.get("metadata", {}), "distance": doc.get("distance")}
+        )
     return sources
 
 
@@ -45,7 +47,9 @@ def build_history_text(history: List[Dict[str, str]]) -> str:
     if not history:
         return "Không có lịch sử hội thoại."
 
-    return "\n".join([f"User: {turn['user']}\nAssistant: {turn['assistant']}" for turn in history])
+    return "\n".join(
+        [f"User: {turn['user']}\nAssistant: {turn['assistant']}" for turn in history]
+    )
 
 
 class BaseAgent:

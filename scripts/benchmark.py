@@ -33,9 +33,9 @@ def percentile(values: List[float], p: float) -> float:
     ceil_idx = min(floor_idx + 1, len(sorted_values) - 1)
     if floor_idx == ceil_idx:
         return sorted_values[floor_idx]
-    return sorted_values[floor_idx] + (sorted_values[ceil_idx] - sorted_values[floor_idx]) * (
-        k - floor_idx
-    )
+    return sorted_values[floor_idx] + (
+        sorted_values[ceil_idx] - sorted_values[floor_idx]
+    ) * (k - floor_idx)
 
 
 def load_queries() -> List[Dict[str, str]]:
@@ -44,11 +44,15 @@ def load_queries() -> List[Dict[str, str]]:
     with open(QUERY_FILE, "r", encoding="utf-8") as file:
         reader = csv.DictReader(file)
         for row in reader:
-            rows.append({"query": row["query"], "expected_intent": row["expected_intent"]})
+            rows.append(
+                {"query": row["query"], "expected_intent": row["expected_intent"]}
+            )
     return rows
 
 
-def call_chat(query: str, session_id: str = "benchmark") -> Tuple[Dict[str, Any], float]:
+def call_chat(
+    query: str, session_id: str = "benchmark"
+) -> Tuple[Dict[str, Any], float]:
     """Call chat API and measure latency."""
     start = time.time()
     response = requests.post(

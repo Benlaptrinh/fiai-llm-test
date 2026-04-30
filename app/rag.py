@@ -30,14 +30,18 @@ class RAGStore:
     """Lightweight vector store wrapper using ChromaDB."""
 
     def __init__(self) -> None:
-        self.embedding_fn = SentenceTransformerEmbeddingFunction(model_name=EMBEDDING_MODEL)
+        self.embedding_fn = SentenceTransformerEmbeddingFunction(
+            model_name=EMBEDDING_MODEL
+        )
         self.client = chromadb.PersistentClient(path=CHROMA_DIR)
         self.collection = self.client.get_or_create_collection(
             name="fnb_knowledge",
             embedding_function=self.embedding_fn,
         )
 
-    def search(self, query: str, intent: Optional[str] = None, top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(
+        self, query: str, intent: Optional[str] = None, top_k: int = 5
+    ) -> List[Dict[str, Any]]:
         """
         Search relevant knowledge by query and intent.
 
@@ -56,7 +60,9 @@ class RAGStore:
             where = {"domain": {"$in": ["faq", "doc"]}}
 
         try:
-            result = self.collection.query(query_texts=[query], n_results=top_k, where=where)
+            result = self.collection.query(
+                query_texts=[query], n_results=top_k, where=where
+            )
         except Exception:
             # Fallback for Chroma filter compatibility differences.
             result = self.collection.query(query_texts=[query], n_results=top_k)
