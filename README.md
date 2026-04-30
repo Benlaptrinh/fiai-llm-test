@@ -15,6 +15,8 @@ This repository contains an end-to-end MVP for a multi-agent F&B assistant:
 ## Architecture
 User Query -> Router -> Specialized Agent -> RAG Retrieval -> LLM Generation -> Response
 
+**Key Insight:** Separating intent routing from generation reduces unnecessary retrieval calls and improves system interpretability.
+
 ```mermaid
 flowchart LR
   U["User Query"] --> R["Router Agent (rule-based)"]
@@ -100,6 +102,13 @@ Endpoints:
 
 - `GET /health`
 - `POST /chat`
+
+Quick curl test:
+```bash
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query":"Wifi tên gì vậy?","session_id":"demo"}'
+```
 
 ## Benchmark
 Run:
