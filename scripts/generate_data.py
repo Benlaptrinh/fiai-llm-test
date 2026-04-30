@@ -1,0 +1,430 @@
+"""
+Synthetic data generator for FI-AI F&B Multi-Agent LLM test.
+
+This script generates structured sample data for:
+- menu.csv
+- faq.csv
+- docs.txt
+- synthetic_queries.csv
+
+The dataset is intentionally designed with:
+- structured fields
+- diversity
+- edge cases
+- ambiguous queries
+- noise queries
+
+This helps evaluate Router, RAG retrieval, cache, and latency.
+"""
+
+from __future__ import annotations
+
+import csv
+import random
+from pathlib import Path
+
+DATA_DIR = Path("data")
+DATA_DIR.mkdir(exist_ok=True)
+
+COFFEE_ITEMS = [
+    "Phin Sữa Đá",
+    "Phin Đen Đá",
+    "Bạc Xỉu",
+    "Latte",
+    "Americano",
+    "Cappuccino",
+    "Espresso",
+    "Cold Brew",
+    "Mocha",
+    "Caramel Macchiato",
+    "Cà Phê Muối",
+    "Cà Phê Dừa",
+    "Vietnamese Latte",
+    "Hazelnut Latte",
+    "Vanilla Latte",
+    "Flat White",
+    "Iced Coffee",
+    "Double Espresso",
+    "Cà Phê Sữa Nóng",
+    "Cà Phê Đen Nóng",
+]
+
+TEA_ITEMS = [
+    "Trà Sen Vàng",
+    "Trà Đào Cam Sả",
+    "Trà Vải",
+    "Trà Xoài Nhiệt Đới",
+    "Trà Chanh Mật Ong",
+    "Trà Oolong Sữa",
+    "Trà Nhài",
+    "Trà Dâu",
+    "Trà Cam Quế",
+    "Trà Táo Bạc Hà",
+    "Matcha Latte",
+    "Hồng Trà Sữa",
+    "Trà Sữa Trân Châu",
+    "Trà Lài Mật Ong",
+    "Trà Atiso Đỏ",
+    "Trà Đào Ít Ngọt",
+    "Trà Thanh Đào",
+    "Trà Kiwi",
+    "Trà Việt Quất",
+    "Trà Gừng Mật Ong",
+]
+
+FREEZE_ITEMS = [
+    "Freeze Trà Xanh",
+    "Freeze Chocolate",
+    "Freeze Caramel",
+    "Freeze Cookies",
+    "Freeze Việt Quất",
+    "Freeze Dâu",
+    "Freeze Matcha Đậu Đỏ",
+    "Freeze Cà Phê",
+    "Freeze Bạc Xỉu",
+    "Freeze Chanh Tuyết",
+    "Freeze Xoài",
+    "Freeze Đào",
+    "Freeze Sữa Chua Dâu",
+    "Freeze Sữa Chua Việt Quất",
+    "Freeze Socola Bạc Hà",
+]
+
+FOOD_ITEMS = [
+    "Bánh Mì Que",
+    "Croissant",
+    "Tiramisu",
+    "Bánh Chuối",
+    "Bánh Phô Mai",
+    "Muffin Chocolate",
+    "Sandwich Gà",
+    "Sandwich Cá Ngừ",
+    "Bánh Táo",
+    "Brownie",
+    "Bánh Su Kem",
+    "Bánh Mì Pate",
+    "Bánh Quy Bơ",
+    "Donut Chocolate",
+    "Bánh Mặn Phô Mai",
+]
+
+SIZE_OPTIONS = ["S", "M", "L"]
+
+
+def price_for_category(category: str, size: str) -> int:
+    """Return a category-based price adjusted by size."""
+    base = {
+        "Coffee": random.choice([35000, 39000, 45000, 49000, 55000]),
+        "Tea": random.choice([39000, 45000, 49000, 55000, 59000]),
+        "Freeze": random.choice([55000, 59000, 65000, 69000]),
+        "Food": random.choice([19000, 29000, 35000, 45000, 55000]),
+    }[category]
+
+    if size == "M":
+        return base + 5000
+    if size == "L":
+        return base + 10000
+    return base
+
+
+def generate_menu() -> None:
+    """Generate ~100 structured menu rows."""
+    rows: list[dict[str, object]] = []
+    item_id = 1
+
+    all_groups = [
+        ("Coffee", COFFEE_ITEMS),
+        ("Tea", TEA_ITEMS),
+        ("Freeze", FREEZE_ITEMS),
+        ("Food", FOOD_ITEMS),
+    ]
+
+    for category, items in all_groups:
+        for name in items:
+            sizes = ["Regular"] if category == "Food" else SIZE_OPTIONS
+            for size in sizes:
+                if len(rows) >= 100:
+                    break
+
+                if category == "Coffee":
+                    caffeine = random.choice(["medium", "high"])
+                    sweetness = random.choice(["low", "medium", "high"])
+                    tags = "coffee,caffeine,strong,popular"
+                    ingredients = (
+                        "cà phê, sữa, đá"
+                        if "Sữa" in name or "Latte" in name
+                        else "cà phê, nước, đá"
+                    )
+                    description = (
+                        f"{name} size {size}, phù hợp khách thích cà phê và hương vị đậm."
+                    )
+                elif category == "Tea":
+                    caffeine = random.choice(["low", "medium"])
+                    sweetness = random.choice(["low", "medium", "high"])
+                    tags = "tea,fruit,refreshing,low-caffeine"
+                    ingredients = "trà, trái cây, syrup, đá"
+                    description = (
+                        f"{name} size {size}, vị thanh mát, phù hợp khách thích đồ uống nhẹ."
+                    )
+                elif category == "Freeze":
+                    caffeine = random.choice(["none", "low", "medium"])
+                    sweetness = random.choice(["medium", "high"])
+                    tags = "freeze,cold,sweet,ice-blended"
+                    ingredients = "đá xay, sữa, kem, syrup"
+                    description = (
+                        f"{name} size {size}, đồ uống đá xay mát lạnh, phù hợp khách thích ngọt."
+                    )
+                else:
+                    caffeine = "none"
+                    sweetness = random.choice(["low", "medium"])
+                    tags = "food,snack,bakery"
+                    ingredients = "bánh, bơ, nhân mặn hoặc ngọt"
+                    description = f"{name}, món ăn nhẹ dùng kèm đồ uống."
+
+                rows.append(
+                    {
+                        "id": item_id,
+                        "name": name,
+                        "category": category,
+                        "size": size,
+                        "price": price_for_category(category, size),
+                        "caffeine": caffeine,
+                        "sweetness": sweetness,
+                        "tags": tags,
+                        "ingredients": ingredients,
+                        "description": description,
+                    }
+                )
+                item_id += 1
+
+            if len(rows) >= 100:
+                break
+
+    with (DATA_DIR / "menu.csv").open("w", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(
+            file,
+            fieldnames=[
+                "id",
+                "name",
+                "category",
+                "size",
+                "price",
+                "caffeine",
+                "sweetness",
+                "tags",
+                "ingredients",
+                "description",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+
+    print(f"Generated menu.csv: {len(rows)} rows")
+
+
+def generate_faq() -> None:
+    """Generate ~30 FAQ rows."""
+    faqs = [
+        ("Quán mở cửa mấy giờ?", "Quán mở cửa từ 7 giờ sáng đến 10 giờ tối mỗi ngày."),
+        ("Quán đóng cửa lúc mấy giờ?", "Quán đóng cửa lúc 10 giờ tối."),
+        (
+            "Wifi tên gì?",
+            "Wifi của quán là Highlands_Guest, mật khẩu vui lòng hỏi nhân viên.",
+        ),
+        ("Có thanh toán bằng thẻ không?", "Quán hỗ trợ tiền mặt, thẻ ngân hàng và ví điện tử."),
+        ("Có thanh toán QR không?", "Quán có hỗ trợ thanh toán QR qua một số ví điện tử."),
+        ("Có giao hàng không?", "Quán hỗ trợ giao hàng qua các ứng dụng đối tác."),
+        (
+            "Có chỗ ngồi làm việc không?",
+            "Một số chi nhánh có khu vực ngồi làm việc và ổ cắm điện.",
+        ),
+        ("Có ổ cắm điện không?", "Một số chi nhánh có ổ cắm điện gần khu vực ngồi làm việc."),
+        ("Có xuất hóa đơn không?", "Quán có hỗ trợ xuất hóa đơn theo yêu cầu."),
+        ("Có món ít ngọt không?", "Khách có thể yêu cầu giảm đường hoặc chọn món ít ngọt."),
+        (
+            "Có món không caffeine không?",
+            "Có thể chọn trà trái cây, freeze hoặc một số món không cà phê.",
+        ),
+        (
+            "Có đồ ăn nhẹ không?",
+            "Quán có bánh mì, croissant, tiramisu và một số món ăn nhẹ.",
+        ),
+        ("Có giảm giá sinh viên không?", "Khuyến mãi phụ thuộc từng thời điểm và từng chi nhánh."),
+        (
+            "Có chỗ đậu xe không?",
+            "Một số chi nhánh có chỗ đậu xe, vui lòng hỏi nhân viên tại quầy.",
+        ),
+        ("Có phòng họp không?", "Một số chi nhánh có không gian phù hợp họp nhóm nhỏ."),
+        ("Có đặt bàn trước không?", "Khách có thể liên hệ chi nhánh để hỏi về đặt bàn trước."),
+        (
+            "Có đổi món sau khi thanh toán không?",
+            "Việc đổi món sau thanh toán phụ thuộc tình trạng xử lý đơn hàng.",
+        ),
+        ("Có hoàn tiền không?", "Chính sách hoàn tiền phụ thuộc từng trường hợp cụ thể."),
+        ("Có size lớn không?", "Nhiều món có size S, M và L tùy loại đồ uống."),
+        ("Có món nóng không?", "Một số món cà phê và trà có thể phục vụ nóng."),
+        ("Có món lạnh không?", "Hầu hết đồ uống đều có phiên bản lạnh hoặc đá."),
+        (
+            "Có món cho trẻ em không?",
+            "Khách có thể chọn một số món ít caffeine hoặc không caffeine.",
+        ),
+        (
+            "Có món chay không?",
+            "Một số món ăn nhẹ có thể phù hợp, vui lòng hỏi nhân viên để xác nhận.",
+        ),
+        (
+            "Có nhận đặt số lượng lớn không?",
+            "Quán có thể hỗ trợ đơn số lượng lớn tùy chi nhánh.",
+        ),
+        ("Có hỗ trợ sinh nhật không?", "Chính sách hỗ trợ sinh nhật phụ thuộc từng chương trình."),
+        ("Có giao hàng nội bộ không?", "Quán thường giao hàng qua đối tác giao nhận."),
+        (
+            "Có giới hạn thời gian ngồi không?",
+            "Thông thường không giới hạn nếu quán không quá đông.",
+        ),
+        (
+            "Có nhận thanh toán công ty không?",
+            "Quán có hỗ trợ hóa đơn theo thông tin khách cung cấp.",
+        ),
+        ("Có chương trình thành viên không?", "Chương trình thành viên phụ thuộc chính sách hiện hành."),
+        (
+            "Có nhận góp ý dịch vụ không?",
+            "Khách có thể góp ý trực tiếp với nhân viên hoặc qua kênh hỗ trợ.",
+        ),
+    ]
+
+    with (DATA_DIR / "faq.csv").open("w", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(file, fieldnames=["id", "question", "answer"])
+        writer.writeheader()
+        for idx, (question, answer) in enumerate(faqs, start=1):
+            writer.writerow({"id": idx, "question": question, "answer": answer})
+
+    print(f"Generated faq.csv: {len(faqs)} rows")
+
+
+def generate_docs() -> None:
+    """Generate policy and system guideline docs (~30 chunks)."""
+    docs = [
+        "Chính sách đặt hàng:\nKhách có thể đặt một hoặc nhiều món. Nếu thiếu số lượng, hệ thống mặc định là 1. Nếu thiếu size, hệ thống cần hỏi lại size trước khi xác nhận.",
+        "Chính sách xác nhận đơn:\nOrder Agent phải xác nhận lại tên món, số lượng, size và giá nếu thông tin đã đủ. Không được tự thêm món ngoài menu.",
+        "Chính sách tư vấn ít ngọt:\nNếu khách nói thích ít ngọt, ưu tiên gợi ý trà trái cây, Americano, Phin Đen Đá hoặc món có sweetness low.",
+        "Chính sách tư vấn không caffeine:\nNếu khách yêu cầu không caffeine, không gợi ý cà phê. Ưu tiên Freeze, trà trái cây hoặc món có caffeine none.",
+        "Chính sách tư vấn cà phê đậm:\nNếu khách thích vị đậm, ưu tiên Phin Đen Đá, Phin Sữa Đá, Cold Brew hoặc Espresso.",
+        "Chính sách tư vấn đồ uống mát:\nNếu khách muốn món mát, ưu tiên trà trái cây, freeze hoặc đồ uống đá.",
+        "Chính sách tư vấn đồ uống phổ biến:\nNếu khách hỏi món bán chạy, có thể gợi ý Phin Sữa Đá, Trà Sen Vàng, Trà Đào Cam Sả hoặc Freeze Trà Xanh.",
+        "Chính sách upsell:\nSau khi khách đặt đồ uống, có thể gợi ý thêm bánh mì que, croissant hoặc tiramisu một cách lịch sự.",
+        "Chính sách chống hallucination:\nAgent không được bịa giá, bịa món, bịa size hoặc bịa chính sách. Nếu không có dữ liệu, phải nói chưa có thông tin xác nhận.",
+        "Chính sách FAQ:\nFAQ Agent chỉ trả lời dựa trên FAQ hoặc tài liệu nội bộ. Nếu context không liên quan, trả lời rằng hiện chưa có dữ liệu.",
+        "Chính sách session:\nHệ thống cần giữ các lượt hội thoại gần nhất để hiểu câu tiếp theo của khách, ví dụ khách nói 'thêm 1 ly nữa'.",
+        "Chính sách cache:\nCác câu hỏi lặp lại như wifi, giờ mở cửa, thanh toán nên được cache để giảm latency.",
+        "Chính sách xử lý câu mơ hồ:\nNếu khách nói 'có gì ngon không', hệ thống nên hỏi thêm khẩu vị hoặc gợi ý món phổ biến.",
+        "Chính sách xử lý câu noise:\nCác câu như hello, haha, ừm, alo nên được phân loại ignore và phản hồi nhẹ nhàng.",
+        "Chính sách đa ngôn ngữ:\nNếu khách hỏi bằng tiếng Anh, hệ thống có thể trả lời bằng tiếng Anh ở mức cơ bản.",
+        "Chính sách TTS:\nCâu trả lời nên ngắn, tự nhiên, dễ đọc thành tiếng, tránh câu quá dài.",
+        "Chính sách giá tiền:\nKhi đọc giá tiền, có thể diễn đạt 39000 VND là 39 nghìn đồng hoặc 39k.",
+        "Chính sách size:\nNếu món có nhiều size, hỏi lại size khi khách chưa nói. Nếu món chỉ có Regular, không cần hỏi size.",
+        "Chính sách món ăn:\nFood Agent hoặc Order Agent có thể xử lý bánh và đồ ăn nhẹ như một loại menu item.",
+        "Chính sách gợi ý theo ngân sách:\nNếu khách nói ngân sách thấp, ưu tiên món giá dưới 45000 VND.",
+        "Chính sách gợi ý theo nhóm:\nNếu khách đặt nhiều món, có thể gợi ý combo đồ uống và bánh nhưng không tự tạo combo nếu menu không có.",
+        "Chính sách dữ liệu menu:\nMenuItem cần có tên, category, size, price, caffeine, sweetness, tags và description để hỗ trợ retrieval.",
+        "Chính sách retrieval:\nRAG nên ưu tiên menu cho order và consultant, ưu tiên FAQ/document cho câu hỏi thông tin chung.",
+        "Chính sách reranking tương lai:\nProduction có thể thêm reranker để cải thiện độ chính xác top-k.",
+        "Chính sách graph RAG tương lai:\nProduction có thể thay ChromaDB bằng Neo4j để lưu MenuItem, Chunk, Entity và relationships.",
+        "Chính sách lỗi hệ thống:\nNếu LLM quá tải hoặc lỗi, hệ thống cần trả lời graceful thay vì crash.",
+        "Chính sách bảo trì dữ liệu:\nKhi menu hoặc FAQ thay đổi, cần chạy lại ingestion để cập nhật embedding.",
+        "Chính sách benchmark:\nCần đo router accuracy, retrieval coverage, average latency, p95 latency và cache-hit latency.",
+        "Chính sách bảo mật:\nKhông lưu thông tin nhạy cảm của khách trong session history.",
+        "Chính sách production:\nMVP local dùng Ollama và ChromaDB, production có thể dùng vLLM/SGLang và Neo4j trên GPU server.",
+    ]
+
+    (DATA_DIR / "docs.txt").write_text("\n\n".join(docs), encoding="utf-8")
+    print(f"Generated docs.txt: {len(docs)} chunks")
+
+
+def generate_queries() -> None:
+    """Generate synthetic queries for benchmark."""
+    queries: list[tuple[str, str]] = []
+    menu_names = COFFEE_ITEMS[:10] + TEA_ITEMS[:10] + FREEZE_ITEMS[:8] + FOOD_ITEMS[:6]
+
+    for _ in range(45):
+        item = random.choice(menu_names)
+        quantity = random.choice(["1", "2", "3", "một", "hai"])
+        size = random.choice(["size S", "size M", "size L", ""])
+        text = random.choice(
+            [
+                f"cho anh {quantity} ly {item} {size}",
+                f"em lấy {quantity} {item} {size}",
+                f"mình muốn order {quantity} {item}",
+                f"cho a {quantity} {item}",
+                f"thêm cho tôi {quantity} {item} {size}",
+            ]
+        ).strip()
+        queries.append((text, "order"))
+
+    consultant_templates = [
+        "có gì ngon không em",
+        "gợi ý cho anh món ít ngọt",
+        "anh không uống caffeine thì nên chọn gì",
+        "tư vấn cho em món mát mát",
+        "món nào bán chạy nhất",
+        "em thích trà trái cây thì uống gì",
+        "anh thích cà phê đậm thì nên uống gì",
+        "có món nào nhẹ nhẹ không",
+        "đồ uống nào hợp với bánh ngọt",
+        "gợi ý món dưới 45k",
+    ]
+    for _ in range(35):
+        queries.append((random.choice(consultant_templates), "consultant"))
+
+    faq_templates = [
+        "wifi tên gì vậy",
+        "quán mấy giờ mở cửa",
+        "mấy giờ đóng cửa",
+        "có thanh toán thẻ không",
+        "có thanh toán qr không",
+        "có giao hàng không",
+        "có xuất hóa đơn không",
+        "có chỗ ngồi làm việc không",
+        "có ổ cắm điện không",
+        "có chỗ đậu xe không",
+        "có đặt bàn trước không",
+        "có size lớn không",
+    ]
+    for _ in range(30):
+        queries.append((random.choice(faq_templates), "faq"))
+
+    noise_templates = [
+        "hello",
+        "hi",
+        "haha",
+        "alo",
+        "ừm",
+        "ờ",
+        "test",
+        "nghe không",
+        "abc xyz",
+        "hihi",
+        "ok",
+        "à à",
+    ]
+    for _ in range(20):
+        queries.append((random.choice(noise_templates), "ignore"))
+
+    random.shuffle(queries)
+
+    with (DATA_DIR / "synthetic_queries.csv").open("w", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(file, fieldnames=["query", "expected_intent"])
+        writer.writeheader()
+        for query, expected in queries:
+            writer.writerow({"query": query, "expected_intent": expected})
+
+    print(f"Generated synthetic_queries.csv: {len(queries)} rows")
+
+
+if __name__ == "__main__":
+    random.seed(42)
+    generate_menu()
+    generate_faq()
+    generate_docs()
+    generate_queries()
+    print("Synthetic dataset generation completed.")
