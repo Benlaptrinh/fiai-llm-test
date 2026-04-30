@@ -1,0 +1,131 @@
+query,expected_intent
+ừm,ignore
+gợi ý cho anh món ít ngọt,consultant
+cho a 1 Trà Vải,order
+cho anh một ly Bánh Chuối size S,order
+anh thích cà phê đậm thì nên uống gì,consultant
+có xuất hóa đơn không,faq
+cho a 3 Freeze Việt Quất,order
+thêm cho tôi 3 Trà Đào Cam Sả size S,order
+có thanh toán qr không,faq
+anh thích cà phê đậm thì nên uống gì,consultant
+cho anh một ly Americano,order
+thêm cho tôi 3 Trà Vải size S,order
+có size lớn không,faq
+ừm,ignore
+anh thích cà phê đậm thì nên uống gì,consultant
+thêm cho tôi 3 Muffin Chocolate,order
+có món nào nhẹ nhẹ không,consultant
+nghe không,ignore
+quán mấy giờ mở cửa,faq
+cho a một Freeze Cookies,order
+tư vấn cho em món mát mát,consultant
+tư vấn cho em món mát mát,consultant
+thêm cho tôi hai Trà Táo Bạc Hà size S,order
+có đặt bàn trước không,faq
+hihi,ignore
+cho anh 2 ly Trà Cam Quế,order
+có thanh toán qr không,faq
+có thanh toán thẻ không,faq
+wifi tên gì vậy,faq
+gợi ý cho anh món ít ngọt,consultant
+có thanh toán qr không,faq
+nghe không,ignore
+nghe không,ignore
+gợi ý món dưới 45k,consultant
+gợi ý món dưới 45k,consultant
+cho anh 2 ly Cold Brew size L,order
+đồ uống nào hợp với bánh ngọt,consultant
+test,ignore
+gợi ý cho anh món ít ngọt,consultant
+hi,ignore
+à à,ignore
+cho a hai Bánh Chuối,order
+tư vấn cho em món mát mát,consultant
+anh không uống caffeine thì nên chọn gì,consultant
+có chỗ ngồi làm việc không,faq
+cho anh 3 ly Trà Dâu size M,order
+hihi,ignore
+món nào bán chạy nhất,consultant
+cho a một Freeze Matcha Đậu Đỏ,order
+cho anh 3 ly Mocha size S,order
+có gì ngon không em,consultant
+mình muốn order 3 Freeze Trà Xanh,order
+cho a hai Cold Brew,order
+mình muốn order 3 Freeze Chocolate,order
+có thanh toán thẻ không,faq
+em lấy 2 Trà Cam Quế,order
+thêm cho tôi một Tiramisu,order
+thêm cho tôi 3 Trà Nhài size M,order
+có ổ cắm điện không,faq
+thêm cho tôi hai Trà Đào Cam Sả size L,order
+có thanh toán qr không,faq
+abc xyz,ignore
+gợi ý cho anh món ít ngọt,consultant
+có thanh toán thẻ không,faq
+có size lớn không,faq
+gợi ý cho anh món ít ngọt,consultant
+à à,ignore
+thêm cho tôi hai Trà Dâu size S,order
+cho a 2 Caramel Macchiato,order
+hihi,ignore
+món nào bán chạy nhất,consultant
+tư vấn cho em món mát mát,consultant
+cho a 3 Freeze Việt Quất,order
+có gì ngon không em,consultant
+có đặt bàn trước không,faq
+cho anh hai ly Americano size L,order
+có chỗ ngồi làm việc không,faq
+abc xyz,ignore
+cho a hai Phin Sữa Đá,order
+quán mấy giờ mở cửa,faq
+có món nào nhẹ nhẹ không,consultant
+cho anh 1 ly Trà Chanh Mật Ong size S,order
+món nào bán chạy nhất,consultant
+gợi ý món dưới 45k,consultant
+mình muốn order 3 Trà Vải,order
+gợi ý món dưới 45k,consultant
+có đặt bàn trước không,faq
+quán mấy giờ mở cửa,faq
+cho a một Trà Dâu,order
+mình muốn order 3 Bạc Xỉu,order
+wifi tên gì vậy,faq
+em lấy một Tiramisu size L,order
+cho anh 3 ly Latte,order
+gợi ý món dưới 45k,consultant
+thêm cho tôi 2 Latte size M,order
+có thanh toán qr không,faq
+ừm,ignore
+món nào bán chạy nhất,consultant
+có size lớn không,faq
+đồ uống nào hợp với bánh ngọt,consultant
+anh không uống caffeine thì nên chọn gì,consultant
+mình muốn order 3 Freeze Caramel,order
+cho anh hai ly Trà Dâu size L,order
+anh thích cà phê đậm thì nên uống gì,consultant
+có chỗ ngồi làm việc không,faq
+gợi ý món dưới 45k,consultant
+gợi ý món dưới 45k,consultant
+em lấy 2 Freeze Trà Xanh,order
+có đặt bàn trước không,faq
+ừm,ignore
+thêm cho tôi 2 Trà Oolong Sữa size S,order
+nghe không,ignore
+cho a 2 Trà Đào Cam Sả,order
+mấy giờ đóng cửa,faq
+à à,ignore
+có chỗ đậu xe không,faq
+cho a 3 Freeze Matcha Đậu Đỏ,order
+đồ uống nào hợp với bánh ngọt,consultant
+tư vấn cho em món mát mát,consultant
+hi,ignore
+mấy giờ đóng cửa,faq
+có thanh toán thẻ không,faq
+cho a hai Trà Táo Bạc Hà,order
+cho anh 1 ly Trà Vải size M,order
+mình muốn order hai Phin Đen Đá,order
+cho anh 3 ly Trà Táo Bạc Hà size M,order
+anh không uống caffeine thì nên chọn gì,consultant
+có chỗ đậu xe không,faq
+haha,ignore
+cho a 3 Phin Đen Đá,order

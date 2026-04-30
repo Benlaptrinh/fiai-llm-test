@@ -1,0 +1,89 @@
+Chính sách đặt hàng:
+Khách có thể đặt một hoặc nhiều món. Nếu thiếu số lượng, hệ thống mặc định là 1. Nếu thiếu size, hệ thống cần hỏi lại size trước khi xác nhận.
+
+Chính sách xác nhận đơn:
+Order Agent phải xác nhận lại tên món, số lượng, size và giá nếu thông tin đã đủ. Không được tự thêm món ngoài menu.
+
+Chính sách tư vấn ít ngọt:
+Nếu khách nói thích ít ngọt, ưu tiên gợi ý trà trái cây, Americano, Phin Đen Đá hoặc món có sweetness low.
+
+Chính sách tư vấn không caffeine:
+Nếu khách yêu cầu không caffeine, không gợi ý cà phê. Ưu tiên Freeze, trà trái cây hoặc món có caffeine none.
+
+Chính sách tư vấn cà phê đậm:
+Nếu khách thích vị đậm, ưu tiên Phin Đen Đá, Phin Sữa Đá, Cold Brew hoặc Espresso.
+
+Chính sách tư vấn đồ uống mát:
+Nếu khách muốn món mát, ưu tiên trà trái cây, freeze hoặc đồ uống đá.
+
+Chính sách tư vấn đồ uống phổ biến:
+Nếu khách hỏi món bán chạy, có thể gợi ý Phin Sữa Đá, Trà Sen Vàng, Trà Đào Cam Sả hoặc Freeze Trà Xanh.
+
+Chính sách upsell:
+Sau khi khách đặt đồ uống, có thể gợi ý thêm bánh mì que, croissant hoặc tiramisu một cách lịch sự.
+
+Chính sách chống hallucination:
+Agent không được bịa giá, bịa món, bịa size hoặc bịa chính sách. Nếu không có dữ liệu, phải nói chưa có thông tin xác nhận.
+
+Chính sách FAQ:
+FAQ Agent chỉ trả lời dựa trên FAQ hoặc tài liệu nội bộ. Nếu context không liên quan, trả lời rằng hiện chưa có dữ liệu.
+
+Chính sách session:
+Hệ thống cần giữ các lượt hội thoại gần nhất để hiểu câu tiếp theo của khách, ví dụ khách nói 'thêm 1 ly nữa'.
+
+Chính sách cache:
+Các câu hỏi lặp lại như wifi, giờ mở cửa, thanh toán nên được cache để giảm latency.
+
+Chính sách xử lý câu mơ hồ:
+Nếu khách nói 'có gì ngon không', hệ thống nên hỏi thêm khẩu vị hoặc gợi ý món phổ biến.
+
+Chính sách xử lý câu noise:
+Các câu như hello, haha, ừm, alo nên được phân loại ignore và phản hồi nhẹ nhàng.
+
+Chính sách đa ngôn ngữ:
+Nếu khách hỏi bằng tiếng Anh, hệ thống có thể trả lời bằng tiếng Anh ở mức cơ bản.
+
+Chính sách TTS:
+Câu trả lời nên ngắn, tự nhiên, dễ đọc thành tiếng, tránh câu quá dài.
+
+Chính sách giá tiền:
+Khi đọc giá tiền, có thể diễn đạt 39000 VND là 39 nghìn đồng hoặc 39k.
+
+Chính sách size:
+Nếu món có nhiều size, hỏi lại size khi khách chưa nói. Nếu món chỉ có Regular, không cần hỏi size.
+
+Chính sách món ăn:
+Food Agent hoặc Order Agent có thể xử lý bánh và đồ ăn nhẹ như một loại menu item.
+
+Chính sách gợi ý theo ngân sách:
+Nếu khách nói ngân sách thấp, ưu tiên món giá dưới 45000 VND.
+
+Chính sách gợi ý theo nhóm:
+Nếu khách đặt nhiều món, có thể gợi ý combo đồ uống và bánh nhưng không tự tạo combo nếu menu không có.
+
+Chính sách dữ liệu menu:
+MenuItem cần có tên, category, size, price, caffeine, sweetness, tags và description để hỗ trợ retrieval.
+
+Chính sách retrieval:
+RAG nên ưu tiên menu cho order và consultant, ưu tiên FAQ/document cho câu hỏi thông tin chung.
+
+Chính sách reranking tương lai:
+Production có thể thêm reranker để cải thiện độ chính xác top-k.
+
+Chính sách graph RAG tương lai:
+Production có thể thay ChromaDB bằng Neo4j để lưu MenuItem, Chunk, Entity và relationships.
+
+Chính sách lỗi hệ thống:
+Nếu LLM quá tải hoặc lỗi, hệ thống cần trả lời graceful thay vì crash.
+
+Chính sách bảo trì dữ liệu:
+Khi menu hoặc FAQ thay đổi, cần chạy lại ingestion để cập nhật embedding.
+
+Chính sách benchmark:
+Cần đo router accuracy, retrieval coverage, average latency, p95 latency và cache-hit latency.
+
+Chính sách bảo mật:
+Không lưu thông tin nhạy cảm của khách trong session history.
+
+Chính sách production:
+MVP local dùng Ollama và ChromaDB, production có thể dùng vLLM/SGLang và Neo4j trên GPU server.
