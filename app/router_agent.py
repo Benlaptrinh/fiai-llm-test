@@ -22,7 +22,6 @@ from __future__ import annotations
 from typing import Dict
 
 ORDER_KEYWORDS = [
-    "cho",
     "lấy",
     "mua",
     "đặt",
@@ -34,10 +33,13 @@ ORDER_KEYWORDS = [
     "2 ly",
     "một ly",
     "hai ly",
+    "cho anh",
+    "cho em",
+    "cho tôi",
+    "size s",
+    "size m",
+    "size l",
     "size",
-    "món",
-    "ly",
-    "bánh",
 ]
 
 CONSULTANT_KEYWORDS = [
@@ -113,11 +115,11 @@ def classify_intent(text: str) -> Dict[str, str]:
     if contains_any(query, FAQ_KEYWORDS):
         return {"action": "faq"}
 
-    if contains_any(query, ORDER_KEYWORDS):
-        return {"action": "order"}
-
     if contains_any(query, CONSULTANT_KEYWORDS):
         return {"action": "consultant"}
+
+    if contains_any(query, ORDER_KEYWORDS):
+        return {"action": "order"}
 
     if contains_any(query, IGNORE_KEYWORDS):
         return {"action": "ignore"}
