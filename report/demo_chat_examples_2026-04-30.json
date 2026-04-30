@@ -1,0 +1,261 @@
+[
+  {
+    "label": "order",
+    "query": "Cho anh 1 ly phin sữa đá size M",
+    "response": {
+      "session_id": "demo-proof",
+      "intent": "order",
+      "answer": "Đã nhận order của bạn:\n\n- 1 ly Phin Sữa Đá size M: 60,000 VND\n\nBạn có cần thêm gì không?",
+      "sources": [
+        {
+          "metadata": {
+            "caffeine": "medium",
+            "category": "Coffee",
+            "domain": "menu",
+            "name": "Phin Sữa Đá",
+            "price": 60000,
+            "size": "M",
+            "sweetness": "high",
+            "type": "MenuItem"
+          },
+          "distance": 9.087223052978516
+        },
+        {
+          "metadata": {
+            "caffeine": "medium",
+            "category": "Coffee",
+            "domain": "menu",
+            "name": "Phin Sữa Đá",
+            "price": 45000,
+            "size": "S",
+            "sweetness": "low",
+            "type": "MenuItem"
+          },
+          "distance": 9.319085121154785
+        },
+        {
+          "metadata": {
+            "caffeine": "medium",
+            "category": "Coffee",
+            "domain": "menu",
+            "name": "Phin Sữa Đá",
+            "price": 49000,
+            "size": "L",
+            "sweetness": "low",
+            "type": "MenuItem"
+          },
+          "distance": 9.47242259979248
+        },
+        {
+          "metadata": {
+            "caffeine": "medium",
+            "category": "Coffee",
+            "domain": "menu",
+            "name": "Phin Đen Đá",
+            "price": 55000,
+            "size": "S",
+            "sweetness": "high",
+            "type": "MenuItem"
+          },
+          "distance": 9.597063064575195
+        },
+        {
+          "metadata": {
+            "caffeine": "high",
+            "category": "Coffee",
+            "domain": "menu",
+            "name": "Phin Đen Đá",
+            "price": 44000,
+            "size": "M",
+            "sweetness": "low",
+            "type": "MenuItem"
+          },
+          "distance": 9.636104583740234
+        }
+      ],
+      "cached": false
+    }
+  },
+  {
+    "label": "consultant",
+    "query": "Có gì ngon không em, anh thích ít ngọt",
+    "response": {
+      "session_id": "demo-proof",
+      "intent": "consultant",
+      "answer": "Chào bạn! Bạn vừa thưởng thức một ly Phin Sữa Đá size M rồi đó ạ. Nếu bạn muốn thử thêm món mới, tôi có một gợi ý cho bạn:\n\n- **Hồng Trà Sữa size S**: Đây là lựa chọn phù hợp với khẩu vị của bạn vì nó có mức độ ngọt ở mức trung bình (medium) và không chứa caffeine. Giá chỉ 59,000 VND nha!\n\nBạn có muốn thử không? Hoặc nếu bạn còn cần tư vấn thêm về các món khác, hãy cho tôi biết nhé!",
+      "sources": [
+        {
+          "metadata": {
+            "caffeine": "medium",
+            "category": "Tea",
+            "domain": "menu",
+            "name": "Hồng Trà Sữa",
+            "price": 69000,
+            "size": "L",
+            "sweetness": "high",
+            "type": "MenuItem"
+          },
+          "distance": 12.429967880249023
+        },
+        {
+          "metadata": {
+            "caffeine": "low",
+            "category": "Tea",
+            "domain": "menu",
+            "name": "Hồng Trà Sữa",
+            "price": 59000,
+            "size": "S",
+            "sweetness": "medium",
+            "type": "MenuItem"
+          },
+          "distance": 12.698057174682617
+        },
+        {
+          "metadata": {
+            "caffeine": "medium",
+            "category": "Tea",
+            "domain": "menu",
+            "name": "Trà Chanh Mật Ong",
+            "price": 59000,
+            "size": "L",
+            "sweetness": "high",
+            "type": "MenuItem"
+          },
+          "distance": 12.853581428527832
+        },
+        {
+          "metadata": {
+            "caffeine": "medium",
+            "category": "Coffee",
+            "domain": "menu",
+            "name": "Cà Phê Muối",
+            "price": 45000,
+            "size": "L",
+            "sweetness": "high",
+            "type": "MenuItem"
+          },
+          "distance": 12.881919860839844
+        },
+        {
+          "metadata": {
+            "caffeine": "low",
+            "category": "Tea",
+            "domain": "menu",
+            "name": "Trà Chanh Mật Ong",
+            "price": 55000,
+            "size": "S",
+            "sweetness": "medium",
+            "type": "MenuItem"
+          },
+          "distance": 12.956100463867188
+        }
+      ],
+      "cached": false
+    }
+  },
+  {
+    "label": "faq",
+    "query": "Wifi tên gì vậy?",
+    "response": {
+      "session_id": "demo-proof",
+      "intent": "faq",
+      "answer": "Wifi của quán là Highlands_Guest, mật khẩu vui lòng hỏi nhân viên.",
+      "sources": [
+        {
+          "metadata": {
+            "domain": "faq",
+            "type": "FAQ"
+          },
+          "distance": 13.289658616942951
+        },
+        {
+          "metadata": {
+            "domain": "faq",
+            "type": "FAQ"
+          },
+          "distance": 26.31367140905412
+        },
+        {
+          "metadata": {
+            "domain": "doc",
+            "type": "Chunk"
+          },
+          "distance": 27.69161117285202
+        },
+        {
+          "metadata": {
+            "domain": "faq",
+            "type": "FAQ"
+          },
+          "distance": 29.62165885191791
+        },
+        {
+          "metadata": {
+            "domain": "faq",
+            "type": "FAQ"
+          },
+          "distance": 30.309786874412286
+        }
+      ],
+      "cached": false
+    }
+  },
+  {
+    "label": "ignore",
+    "query": "haha hello",
+    "response": {
+      "session_id": "demo-proof",
+      "intent": "ignore",
+      "answer": "Dạ em đang nghe ạ. Anh/chị muốn đặt món, hỏi thông tin hay cần tư vấn món nào ạ?",
+      "sources": [],
+      "cached": false
+    }
+  },
+  {
+    "label": "faq-cache-hit",
+    "query": "Wifi tên gì vậy?",
+    "response": {
+      "session_id": "demo-proof",
+      "intent": "faq",
+      "answer": "Wifi của quán là Highlands_Guest, mật khẩu vui lòng hỏi nhân viên.",
+      "sources": [
+        {
+          "metadata": {
+            "domain": "faq",
+            "type": "FAQ"
+          },
+          "distance": 13.289658616942951
+        },
+        {
+          "metadata": {
+            "domain": "faq",
+            "type": "FAQ"
+          },
+          "distance": 26.31367140905412
+        },
+        {
+          "metadata": {
+            "domain": "doc",
+            "type": "Chunk"
+          },
+          "distance": 27.69161117285202
+        },
+        {
+          "metadata": {
+            "domain": "faq",
+            "type": "FAQ"
+          },
+          "distance": 29.62165885191791
+        },
+        {
+          "metadata": {
+            "domain": "faq",
+            "type": "FAQ"
+          },
+          "distance": 30.309786874412286
+        }
+      ],
+      "cached": true
+    }
+  }
+]

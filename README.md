@@ -1,4 +1,5 @@
 # FI-AI Multi-Agent LLM Test
+End-to-end multi-agent LLM system with RAG, local inference, and production-ready design.
 
 ## Overview
 This repository contains an end-to-end MVP for a multi-agent F&B assistant:
@@ -13,6 +14,23 @@ This repository contains an end-to-end MVP for a multi-agent F&B assistant:
 
 ## Architecture
 User Query -> Router -> Specialized Agent -> RAG Retrieval -> LLM Generation -> Response
+
+```mermaid
+flowchart LR
+  U["User Query"] --> R["Router Agent (rule-based)"]
+  R -->|order| OA["Order Agent"]
+  R -->|consultant| CA["Consultant Agent"]
+  R -->|faq| FA["FAQ Agent"]
+  R -->|ignore| IA["Ignore Agent"]
+  OA --> VS["RAGStore (ChromaDB)"]
+  CA --> VS
+  FA --> VS
+  VS --> LLM["Ollama (qwen2.5:7b)"]
+  IA --> RESP["FastAPI Response"]
+  LLM --> RESP
+  RESP --> S["SessionStore"]
+  RESP --> C["SimpleCache"]
+```
 
 Core components:
 
@@ -96,6 +114,12 @@ Current sample output:
 - Average Latency: `2.8177s`
 - P95 Latency: `10.3994s`
 - Cache Hit Latency: `0.0029s`
+
+## Demo Evidence
+Real API responses for order, consultant, FAQ, ignore, and repeated FAQ cache-hit are saved in:
+
+- `report/demo_chat_examples.md`
+- `report/demo_chat_examples_2026-04-30.json`
 
 ## Metric Notes
 Retrieval Coverage is used as a proxy metric for retrieval quality in this prototype.
