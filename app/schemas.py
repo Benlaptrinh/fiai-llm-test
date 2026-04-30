@@ -4,9 +4,9 @@ Pydantic schemas for API request and response.
 Defines the contract between client and system.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ChatRequest(BaseModel):
@@ -15,7 +15,7 @@ class ChatRequest(BaseModel):
     """
 
     query: str
-    session_id: Optional[str] = "default"
+    session_id: str = "default"
 
 
 class ChatResponse(BaseModel):
@@ -27,5 +27,5 @@ class ChatResponse(BaseModel):
     session_id: str
     intent: str
     answer: str
-    sources: List[Dict[str, Any]] = []
+    sources: List[Dict[str, Any]] = Field(default_factory=list)
     cached: bool = False
