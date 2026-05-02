@@ -31,6 +31,13 @@ def main() -> None:
 
     df = pd.read_csv(DATA_PATH)
 
+    # Support both old format (query/expected_intent) and new format (text/intent)
+    col_map = {
+        "text": "query",
+        "intent": "expected_intent",
+    }
+    df = df.rename(columns=col_map)
+
     if "query" not in df.columns or "expected_intent" not in df.columns:
         raise ValueError(
             "synthetic_queries.csv must contain query and expected_intent columns"
