@@ -124,7 +124,9 @@ class GraphRAGStore:
         with self.driver.session() as session:
             session.run(query, **item)
 
-    def search(self, query_text: str, intent: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(
+        self, query_text: str, intent: str, top_k: int = 5
+    ) -> List[Dict[str, Any]]:
         """
         Graph retrieval by intent and keyword matching.
 
