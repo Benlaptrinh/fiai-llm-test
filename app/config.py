@@ -24,6 +24,14 @@ CHROMA_DIR = os.getenv("CHROMA_DIR", "./chroma_db")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 
+# SLM router
+SLM_ROUTER_ENABLED = os.getenv("SLM_ROUTER_ENABLED", "false").lower() == "true"
+SLM_ROUTER_MODEL = os.getenv("SLM_ROUTER_MODEL", "qwen2.5:1.5b")
+SLM_ROUTER_TIMEOUT_SECONDS = int(os.getenv("SLM_ROUTER_TIMEOUT_SECONDS", "20"))
+SLM_ROUTER_CONFIDENCE_THRESHOLD = float(
+    os.getenv("SLM_ROUTER_CONFIDENCE_THRESHOLD", "0.0")
+)
+
 LLM_BACKEND = os.getenv("LLM_BACKEND", "ollama")
 
 OPENAI_COMPAT_BASE_URL = os.getenv("OPENAI_COMPAT_BASE_URL", "http://localhost:8001/v1")
