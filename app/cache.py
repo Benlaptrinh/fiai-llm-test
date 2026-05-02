@@ -43,10 +43,51 @@ class SimpleCache:
         return "memory"
 
     def normalize(self, text: str) -> str:
-        """Normalize query text for cache key."""
+        """
+        Normalize query text for cache key.
+
+        This includes:
+        - lowercase
+        - whitespace normalization
+        - punctuation removal
+        - paraphrase-lite mapping for common repeated intents
+        """
         normalized = text.lower().strip()
         normalized = re.sub(r"\s+", " ", normalized)
         normalized = re.sub(r"[^\w\sÀ-ỹ]", "", normalized)
+
+        synonym_map = {
+            # FAQ / wifi
+            "wifi tên gì": "wifi",
+            "tên wifi": "wifi",
+            "cho em xin wifi": "wifi",
+            "xin wifi": "wifi",
+            "mật khẩu wifi": "wifi",
+            "pass wifi": "wifi",
+            "password wifi": "wifi",
+            # Opening hours
+            "mấy giờ mở cửa": "giờ mở cửa",
+            "quán mở cửa mấy giờ": "giờ mở cửa",
+            "mấy giờ đóng cửa": "giờ đóng cửa",
+            "quán đóng cửa mấy giờ": "giờ đóng cửa",
+            # Payment
+            "thanh toán qr": "thanh toán",
+            "thanh toán thẻ": "thanh toán",
+            "trả bằng thẻ": "thanh toán",
+            "quẹt thẻ": "thanh toán",
+            # Recommendation
+            "ít đường": "ít ngọt",
+            "không ngọt": "ít ngọt",
+            "bớt ngọt": "ít ngọt",
+            "recommend": "gợi ý",
+            "suggest": "gợi ý",
+            "tư vấn": "gợi ý",
+            "có gì ngon": "gợi ý",
+        }
+
+        for phrase, canonical in synonym_map.items():
+            normalized = normalized.replace(phrase, canonical)
+
         return normalized
 
     def get(self, query: str) -> Optional[Dict[str, Any]]:
