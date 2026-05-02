@@ -110,6 +110,25 @@ Runtime behavior:
 - If the trained model is available and confidence is high enough, routing uses learned prediction.
 - If model is missing/uncertain/unavailable, routing falls back to deterministic rule-based logic.
 
+## SLM Intent Router
+The system supports a real small language model router using Ollama:
+
+```bash
+ollama pull qwen2.5:1.5b
+export SLM_ROUTER_ENABLED=true
+export SLM_ROUTER_MODEL=qwen2.5:1.5b
+```
+
+The SLM router classifies user queries into:
+
+- `order`
+- `consultant`
+- `faq`
+- `ignore`
+
+If the SLM router is disabled or unavailable, the system falls back to the learned router and then the rule-based router.
+This keeps the production path robust while still supporting a real `<3B` intent model.
+
 ## Run API
 ```bash
 export OLLAMA_MODEL=qwen2.5:7b
@@ -235,6 +254,15 @@ If Redis is available, `/health` returns:
 
 If Redis is unavailable, the system automatically falls back to in-memory cache:
 - `"cache_backend": "memory"`
+
+## Paraphrase-lite Cache
+The cache layer normalizes common paraphrases into shared keys to reduce repeated LLM calls.
+
+Examples:
+
+- `Wifi tên gì?`
+- `Cho em xin wifi`
+- `Mật khẩu wifi`
 
 ## Demo Evidence
 Real API responses for order, consultant, FAQ, ignore, and repeated FAQ cache-hit are saved in:
