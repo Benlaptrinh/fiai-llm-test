@@ -92,6 +92,23 @@
       }
     },
     {
+      "name": "FAQ - Stream SSE",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"Wifi tên gì vậy?\",\n  \"session_id\": \"stream-demo\"\n}"
+        },
+        "url": "{{base_url}}/chat/stream"
+      }
+    },
+    {
       "name": "Ignore",
       "request": {
         "method": "POST",

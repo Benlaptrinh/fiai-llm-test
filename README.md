@@ -103,6 +103,7 @@ Endpoints:
 
 - `GET /health`
 - `POST /chat`
+- `POST /chat/stream` (SSE)
 
 Quick curl test:
 ```bash
@@ -110,6 +111,34 @@ curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
   -d '{"query":"Wifi tên gì vậy?","session_id":"demo"}'
 ```
+
+## Streaming API
+The project includes an SSE streaming endpoint:
+
+```bash
+curl -N -X POST http://127.0.0.1:8000/chat/stream \
+  -H "Content-Type: application/json" \
+  -d '{"query":"Wifi tên gì vậy?","session_id":"stream-demo"}'
+```
+
+The endpoint streams tokens from Ollama using `stream=true`.
+In production, the same interface can be mapped to vLLM/SGLang streaming APIs.
+
+## LLM Backend Adapter
+The system supports a pluggable LLM backend:
+
+- `LLM_BACKEND=ollama` for local Mac development
+- `LLM_BACKEND=openai_compat` for vLLM/SGLang/OpenAI-compatible servers
+
+Example production-style configuration:
+
+```bash
+export LLM_BACKEND=openai_compat
+export OPENAI_COMPAT_BASE_URL=http://<gpu-server>:8001/v1
+export OPENAI_COMPAT_MODEL=Qwen/Qwen2.5-7B-Instruct
+```
+
+This allows migration to RTX 3060 serving without changing router, agent, RAG, session, cache, or API layers.
 
 ## Benchmark
 Run:
@@ -130,6 +159,21 @@ Current sample output:
 - Cache uses normalized query keys to reduce duplicate LLM calls and improve latency.
 - Retrieval is filtered by intent to improve relevance and reduce noise.
 - The system can be extended to support token streaming via SSE in production.
+
+## Docker
+Ollama runs on the host machine. The API can run in Docker:
+
+```bash
+docker compose build
+docker compose run --rm api python scripts/ingest.py
+docker compose up
+```
+
+Health check:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
 
 ## Demo Evidence
 Real API responses for order, consultant, FAQ, ignore, and repeated FAQ cache-hit are saved in:
