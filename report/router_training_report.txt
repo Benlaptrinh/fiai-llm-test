@@ -1,0 +1,19 @@
+Lightweight Router Training Report
+=================================
+
+Dataset: data/synthetic_queries.csv
+Train size: 97
+Test size: 33
+Accuracy: 1.0000
+
+              precision    recall  f1-score   support
+
+  consultant     1.0000    1.0000    1.0000         9
+         faq     1.0000    1.0000    1.0000         8
+      ignore     1.0000    1.0000    1.0000         5
+       order     1.0000    1.0000    1.0000        11
+
+    accuracy                         1.0000        33
+   macro avg     1.0000    1.0000    1.0000        33
+weighted avg     1.0000    1.0000    1.0000        33
+
