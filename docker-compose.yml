@@ -1,0 +1,16 @@
+services:
+  api:
+    build: .
+    container_name: fiai-llm-api
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=qwen2.5:7b
+      - LLM_BACKEND=ollama
+      - CHROMA_DIR=/app/chroma_db
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
