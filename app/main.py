@@ -23,6 +23,8 @@ from app.config import (
     LLM_BACKEND,
     MAX_CONCURRENT_LLM_REQUESTS,
     QUEUE_TIMEOUT_SECONDS,
+    SLM_ROUTER_ENABLED,
+    SLM_ROUTER_MODEL,
 )
 from app.agents import (
     ConsultantAgent,
@@ -80,6 +82,8 @@ def health() -> dict:
         "cache_backend": cache.backend_name(),
         "max_concurrent_llm_requests": MAX_CONCURRENT_LLM_REQUESTS,
         "queue_timeout_seconds": QUEUE_TIMEOUT_SECONDS,
+        "slm_router_enabled": SLM_ROUTER_ENABLED,
+        "slm_router_model": SLM_ROUTER_MODEL,
     }
 
 
