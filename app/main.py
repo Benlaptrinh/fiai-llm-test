@@ -10,16 +10,27 @@ User Query
 -> Response with sources, session and cache
 """
 
+import json
+
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 
 from app.cache import SimpleCache
-from app.config import APP_NAME
-from app.agents import ConsultantAgent, FAQAgent, IgnoreAgent, OrderAgent
+from app.config import APP_NAME, LLM_BACKEND
+from app.agents import (
+    ConsultantAgent,
+    FAQAgent,
+    IgnoreAgent,
+    OrderAgent,
+    build_agent_prompt,
+    format_sources,
+)
 from app.guardrails import is_guardrail_blocked
 from app.rag import RAGStore
 from app.router_agent import classify_intent
 from app.schemas import ChatRequest, ChatResponse
 from app.session_store import SessionStore
+from app.utils import call_llm, stream_ollama
 
 app = FastAPI(title=APP_NAME)
 
@@ -98,3 +109,163 @@ def chat(request: ChatRequest) -> ChatResponse:
         sources=sources,
         cached=False,
     )
+
+
+@app.post("/chat/stream")
+def chat_stream(request: ChatRequest) -> StreamingResponse:
+    """
+    Streaming chat endpoint using Server-Sent Events (SSE).
+
+    Flow:
+    - guardrail check
+    - cache check
+    - classify intent
+    - retrieve RAG context
+    - build prompt
+    - stream tokens
+    """
+    if is_guardrail_blocked(request.query):
+
+        def guardrail_event_stream():
+            metadata = {
+                "type": "metadata",
+                "intent": "guardrail",
+                "cached": False,
+                "sources": [],
+            }
+            yield f"data: {json.dumps(metadata, ensure_ascii=False)}\n\n"
+            yield (
+                "data: "
+                + json.dumps(
+                    {
+                        "type": "token",
+                        "content": (
+                            "Xin lỗi, mình không thể hỗ trợ nội dung này. "
+                            "Bạn vui lòng hỏi về đặt món, tư vấn món hoặc thông tin quán."
+                        ),
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n\n"
+            )
+            yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
+
+        return StreamingResponse(
+            guardrail_event_stream(), media_type="text/event-stream"
+        )
+
+    cached = cache.get(request.query)
+    if cached:
+
+        def cached_event_stream():
+            metadata = {
+                "type": "metadata",
+                "intent": cached["intent"],
+                "cached": True,
+                "sources": cached.get("sources", []),
+            }
+            yield f"data: {json.dumps(metadata, ensure_ascii=False)}\n\n"
+            yield (
+                "data: "
+                + json.dumps(
+                    {"type": "token", "content": cached["answer"]},
+                    ensure_ascii=False,
+                )
+                + "\n\n"
+            )
+            yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
+
+        return StreamingResponse(cached_event_stream(), media_type="text/event-stream")
+
+    intent = classify_intent(request.query)["action"]
+    history = session_store.get_history(request.session_id)
+
+    if intent in ["order", "consultant", "faq"]:
+        docs = rag_store.search(request.query, intent=intent, top_k=5)
+        sources = format_sources(docs)
+    else:
+        docs = []
+        sources = []
+
+    if intent == "ignore":
+        ignore_answer = ignore_agent.answer(request.query, history)["answer"]
+
+        def ignore_event_stream():
+            metadata = {
+                "type": "metadata",
+                "intent": "ignore",
+                "cached": False,
+                "sources": [],
+            }
+            yield f"data: {json.dumps(metadata, ensure_ascii=False)}\n\n"
+            yield (
+                "data: "
+                + json.dumps(
+                    {"type": "token", "content": ignore_answer},
+                    ensure_ascii=False,
+                )
+                + "\n\n"
+            )
+            session_store.add_turn(
+                session_id=request.session_id,
+                user=request.query,
+                assistant=ignore_answer,
+            )
+            cache.set(
+                request.query,
+                {"intent": "ignore", "answer": ignore_answer, "sources": []},
+            )
+            yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
+
+        return StreamingResponse(ignore_event_stream(), media_type="text/event-stream")
+
+    prompt = build_agent_prompt(intent, request.query, history, docs)
+
+    def event_stream():
+        metadata = {
+            "type": "metadata",
+            "intent": intent,
+            "cached": False,
+            "sources": sources,
+        }
+        yield f"data: {json.dumps(metadata, ensure_ascii=False)}\n\n"
+
+        full_answer = ""
+
+        if LLM_BACKEND == "openai_compat":
+            # Streaming path for OpenAI-compatible backends can be mapped later.
+            chunk = call_llm(prompt)
+            full_answer = chunk
+            yield (
+                "data: "
+                + json.dumps({"type": "token", "content": chunk}, ensure_ascii=False)
+                + "\n\n"
+            )
+        else:
+            for token in stream_ollama(prompt):
+                full_answer += token
+                yield (
+                    "data: "
+                    + json.dumps(
+                        {"type": "token", "content": token},
+                        ensure_ascii=False,
+                    )
+                    + "\n\n"
+                )
+
+        session_store.add_turn(
+            session_id=request.session_id,
+            user=request.query,
+            assistant=full_answer,
+        )
+        cache.set(
+            request.query,
+            {
+                "intent": intent,
+                "answer": full_answer,
+                "sources": sources,
+            },
+        )
+        yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")

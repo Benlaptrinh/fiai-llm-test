@@ -18,7 +18,41 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from app.rag import RAGStore
-from app.utils import call_ollama
+from app.utils import call_llm
+
+ORDER_ROLE = """
+Bạn là Order Agent cho quán F&B.
+Nhiệm vụ:
+- Nhận order từ khách.
+- Xác nhận món, số lượng, size nếu có.
+- Chỉ dùng thông tin menu trong context.
+- Không bịa món, không bịa giá.
+- Nếu thiếu size hoặc số lượng, hỏi lại ngắn gọn.
+"""
+
+CONSULTANT_ROLE = """
+Bạn là Consultant Agent cho quán F&B.
+Nhiệm vụ:
+- Tư vấn món dựa trên khẩu vị, ngân sách và context.
+- Nếu khách thích ít ngọt, ưu tiên sweetness low hoặc medium.
+- Nếu khách không uống caffeine, không gợi ý món caffeine high.
+- Chỉ gợi ý món có trong context.
+- Không bịa món hoặc giá.
+"""
+
+FAQ_ROLE = """
+Bạn là FAQ Agent cho quán F&B.
+Nhiệm vụ:
+- Trả lời các câu hỏi chung như wifi, giờ mở cửa, thanh toán, hóa đơn.
+- Chỉ trả lời dựa trên context.
+- Nếu context không có thông tin, nói chưa có dữ liệu để xác nhận.
+- Không bịa chính sách.
+"""
+
+IGNORE_ROLE = """
+Bạn là Ignore Agent.
+Nếu câu hỏi không rõ hoặc ngoài phạm vi F&B, hãy phản hồi ngắn gọn và lịch sự.
+"""
 
 
 def format_context(docs: List[Dict[str, Any]]) -> str:
@@ -52,6 +86,43 @@ def build_history_text(history: List[Dict[str, str]]) -> str:
     )
 
 
+def build_agent_prompt(
+    intent: str,
+    query: str,
+    history: List[Dict[str, str]],
+    docs: List[Dict[str, Any]],
+) -> str:
+    """
+    Build prompt for regular and streaming endpoints.
+
+    This keeps `/chat` and `/chat/stream` consistent with specialized behavior.
+    """
+    context = format_context(docs)
+    history_text = build_history_text(history)
+
+    if intent == "order":
+        role = ORDER_ROLE
+    elif intent == "consultant":
+        role = CONSULTANT_ROLE
+    elif intent == "faq":
+        role = FAQ_ROLE
+    else:
+        role = IGNORE_ROLE
+
+    return f"""{role}
+
+Lịch sử hội thoại:
+{history_text}
+
+Context:
+{context}
+
+Khách nói:
+{query}
+
+Trả lời bằng tiếng Việt, tự nhiên, ngắn gọn."""
+
+
 class BaseAgent:
     """Base class for all specialized agents."""
 
@@ -67,29 +138,8 @@ class OrderAgent(BaseAgent):
 
     def answer(self, query: str, history: List[Dict[str, str]]) -> Dict[str, Any]:
         docs = self.rag.search(query, intent="order", top_k=5)
-        context = format_context(docs)
-        history_text = build_history_text(history)
-
-        prompt = f"""Bạn là Order Agent cho quán F&B.
-Nhiệm vụ:
-- Nhận order từ khách.
-- Xác nhận món, số lượng, size nếu có.
-- Chỉ dùng thông tin menu trong context.
-- Không bịa món, không bịa giá.
-- Nếu thiếu size hoặc số lượng, hỏi lại ngắn gọn.
-
-Lịch sử hội thoại:
-{history_text}
-
-Menu context:
-{context}
-
-Khách nói:
-{query}
-
-Trả lời bằng tiếng Việt, thân thiện, ngắn gọn."""
-
-        return {"answer": call_ollama(prompt), "sources": format_sources(docs)}
+        prompt = build_agent_prompt("order", query, history, docs)
+        return {"answer": call_llm(prompt), "sources": format_sources(docs)}
 
 
 class ConsultantAgent(BaseAgent):
@@ -97,29 +147,8 @@ class ConsultantAgent(BaseAgent):
 
     def answer(self, query: str, history: List[Dict[str, str]]) -> Dict[str, Any]:
         docs = self.rag.search(query, intent="consultant", top_k=5)
-        context = format_context(docs)
-        history_text = build_history_text(history)
-
-        prompt = f"""Bạn là Consultant Agent cho quán F&B.
-Nhiệm vụ:
-- Tư vấn món dựa trên khẩu vị, ngân sách và context.
-- Nếu khách thích ít ngọt, ưu tiên sweetness low hoặc medium.
-- Nếu khách không uống caffeine, không gợi ý món caffeine high.
-- Chỉ gợi ý món có trong context.
-- Không bịa món hoặc giá.
-
-Lịch sử hội thoại:
-{history_text}
-
-Context:
-{context}
-
-Khách nói:
-{query}
-
-Trả lời bằng tiếng Việt, tự nhiên, thân thiện."""
-
-        return {"answer": call_ollama(prompt), "sources": format_sources(docs)}
+        prompt = build_agent_prompt("consultant", query, history, docs)
+        return {"answer": call_llm(prompt), "sources": format_sources(docs)}
 
 
 class FAQAgent(BaseAgent):
@@ -127,28 +156,8 @@ class FAQAgent(BaseAgent):
 
     def answer(self, query: str, history: List[Dict[str, str]]) -> Dict[str, Any]:
         docs = self.rag.search(query, intent="faq", top_k=5)
-        context = format_context(docs)
-        history_text = build_history_text(history)
-
-        prompt = f"""Bạn là FAQ Agent cho quán F&B.
-Nhiệm vụ:
-- Trả lời các câu hỏi chung như wifi, giờ mở cửa, thanh toán, hóa đơn.
-- Chỉ trả lời dựa trên context.
-- Nếu context không có thông tin, nói chưa có dữ liệu để xác nhận.
-- Không bịa chính sách.
-
-Lịch sử hội thoại:
-{history_text}
-
-Context:
-{context}
-
-Khách hỏi:
-{query}
-
-Trả lời bằng tiếng Việt, ngắn gọn."""
-
-        return {"answer": call_ollama(prompt), "sources": format_sources(docs)}
+        prompt = build_agent_prompt("faq", query, history, docs)
+        return {"answer": call_llm(prompt), "sources": format_sources(docs)}
 
 
 class IgnoreAgent(BaseAgent):

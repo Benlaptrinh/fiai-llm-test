@@ -8,7 +8,6 @@ before they reach router, retrieval, or generation.
 
 from __future__ import annotations
 
-
 BLOCKED_KEYWORDS = [
     "cách chế bom",
     "chế bom",
