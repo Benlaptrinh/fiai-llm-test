@@ -19,7 +19,13 @@ Production extension:
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Dict
+
+import joblib
+
+ROUTER_MODEL_PATH = Path("models/router_model.joblib")
+_learned_router_model = None
 
 ORDER_KEYWORDS = [
     "lấy",
@@ -97,6 +103,61 @@ def contains_any(text: str, keywords: list[str]) -> bool:
     return any(keyword in text for keyword in keywords)
 
 
+def load_learned_router():
+    """
+    Load trained router model if available.
+
+    If the model is missing or cannot be loaded, the system falls back
+    to the deterministic rule-based router.
+    """
+    global _learned_router_model
+
+    if _learned_router_model is not None:
+        return _learned_router_model
+
+    if not ROUTER_MODEL_PATH.exists():
+        return None
+
+    try:
+        _learned_router_model = joblib.load(ROUTER_MODEL_PATH)
+        return _learned_router_model
+    except Exception:
+        _learned_router_model = None
+        return None
+
+
+def classify_intent_learned(query: str) -> Dict[str, str]:
+    """
+    Classify query using trained lightweight model with confidence threshold.
+    """
+    model = load_learned_router()
+
+    if model is None:
+        return {}
+
+    try:
+        intent = model.predict([query])[0]
+
+        confidence = None
+        if hasattr(model, "predict_proba"):
+            probabilities = model.predict_proba([query])[0]
+            confidence = float(max(probabilities))
+
+        # Fall back to rule-based routing on uncertain predictions.
+        if confidence is not None and confidence < 0.45:
+            return {}
+
+        if intent not in {"order", "consultant", "faq", "ignore"}:
+            return {}
+
+        result = {"action": intent, "method": "learned_router"}
+        if confidence is not None:
+            result["confidence"] = f"{confidence:.4f}"
+        return result
+    except Exception:
+        return {}
+
+
 def classify_intent(text: str) -> Dict[str, str]:
     """
     Classify user query into 4 intents.
@@ -111,6 +172,10 @@ def classify_intent(text: str) -> Dict[str, str]:
 
     if not query or len(query) <= 2:
         return {"action": "ignore"}
+
+    learned_result = classify_intent_learned(query)
+    if learned_result:
+        return learned_result
 
     if contains_any(query, FAQ_KEYWORDS):
         return {"action": "faq"}
