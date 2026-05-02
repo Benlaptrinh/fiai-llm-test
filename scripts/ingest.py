@@ -21,6 +21,7 @@ import pandas as pd
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.config import CHROMA_DIR
+from app.graph_rag import GraphRAGStore
 from app.rag import RAGStore
 
 
@@ -121,3 +122,52 @@ if __name__ == "__main__":
     ingest_docs(rag_store)
 
     print("Total documents:", rag_store.count())
+
+    graph_store = GraphRAGStore()
+    if graph_store.is_available():
+        print("Neo4j is available. Ingesting graph data...")
+        graph_store.clear()
+        graph_store.create_constraints()
+
+        menu_dataframe = pd.read_csv("data/menu.csv")
+        for _, row in menu_dataframe.iterrows():
+            graph_store.upsert_menu_item(
+                {
+                    "id": int(row["id"]),
+                    "name": row["name"],
+                    "category": row["category"],
+                    "size": row["size"],
+                    "price": int(row["price"]),
+                    "caffeine": row["caffeine"],
+                    "sweetness": row["sweetness"],
+                    "tags": row["tags"],
+                    "description": row["description"],
+                }
+            )
+
+        faq_dataframe = pd.read_csv("data/faq.csv")
+        for _, row in faq_dataframe.iterrows():
+            graph_store.upsert_faq(
+                {
+                    "id": int(row["id"]),
+                    "question": row["question"],
+                    "answer": row["answer"],
+                }
+            )
+
+        with open("data/docs.txt", "r", encoding="utf-8") as file:
+            content = file.read()
+
+        chunks = [chunk.strip() for chunk in content.split("\n\n") if chunk.strip()]
+        for idx, chunk in enumerate(chunks):
+            graph_store.upsert_doc_chunk(
+                {
+                    "id": idx,
+                    "text": chunk,
+                }
+            )
+
+        print("Graph ingestion completed.")
+        graph_store.close()
+    else:
+        print("Neo4j is not available. Skipping graph ingestion.")
