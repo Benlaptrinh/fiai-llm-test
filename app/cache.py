@@ -145,48 +145,110 @@ class SimpleCache:
         normalized = re.sub(r"[^\w\sÀ-ỹ]", "", normalized)
 
         synonym_map = {
-            # FAQ / wifi
+            # FAQ / wifi - expanded with more paraphrases
             "wifi tên gì": "wifi",
             "tên wifi": "wifi",
             "cho em xin wifi": "wifi",
+            "cho anh xin wifi": "wifi",
             "xin wifi": "wifi",
             "mật khẩu wifi": "wifi",
             "pass wifi": "wifi",
             "password wifi": "wifi",
+            "cho hỏi wifi": "wifi",
+            "hỏi chút wifi": "wifi",
+            "wifi là gì": "wifi",
+            "wifi name": "wifi",
             # Opening hours
             "mấy giờ mở cửa": "giờ mở cửa",
             "quán mở cửa mấy giờ": "giờ mở cửa",
+            "mấy giờ bắt đầu mở": "giờ mở cửa",
+            "sáng mấy giờ mở": "giờ mở cửa",
+            "open mấy giờ": "giờ mở cửa",
+            "what time do you open": "giờ mở cửa",
+            "giờ bắt đầu": "giờ mở cửa",
+            # Closing hours
             "mấy giờ đóng cửa": "giờ đóng cửa",
             "quán đóng cửa mấy giờ": "giờ đóng cửa",
+            "tối mấy giờ đóng": "giờ đóng cửa",
+            "close mấy giờ": "giờ đóng cửa",
+            "what time do you close": "giờ đóng cửa",
+            "đóng cửa lúc mấy giờ": "giờ đóng cửa",
             # Payment
             "thanh toán qr": "thanh toán",
             "thanh toán thẻ": "thanh toán",
             "trả bằng thẻ": "thanh toán",
             "quẹt thẻ": "thanh toán",
+            "thanh toán bằng thẻ": "thanh toán",
+            "pay by card": "thanh toán",
+            "có qr không": "thanh toán",
+            "cà phê bao nhiêu": "thanh toán",
             # Recommendation
             "ít đường": "ít ngọt",
             "không ngọt": "ít ngọt",
             "bớt ngọt": "ít ngọt",
+            "ít ngọt": "gợi ý",
             "recommend": "gợi ý",
             "suggest": "gợi ý",
             "tư vấn": "gợi ý",
             "có gì ngon": "gợi ý",
+            "gợi ý món": "gợi ý",
+            "món nào ngon": "gợi ý",
+            "what's good": "gợi ý",
+            "best seller": "gợi ý",
+            "ngon": "gợi ý",
+            # Delivery
+            "giao hàng": "giao hàng",
+            "delivery": "giao hàng",
+            "ship": "giao hàng",
+            "giao tận nơi": "giao hàng",
+            "đặt hàng giao": "giao hàng",
+            # Birthday
+            "sinh nhật": "sinh nhật",
+            "birthday": "sinh nhật",
+            "giảm giá sinh nhật": "sinh nhật",
+            # Seating
+            "chỗ ngồi": "chỗ ngồi",
+            "ngồi làm việc": "chỗ ngồi",
+            "workspace": "chỗ ngồi",
+            "ổ cắm điện": "chỗ ngồi",
+            # Order patterns
+            "cho một": "order",
+            "cho em": "order",
+            "cho anh": "order",
+            "mình order": "order",
+            "em muốn": "order",
+            "tôi muốn": "order",
+            "gọi": "order",
+            "lấy": "order",
+            "mua": "order",
+            "order": "order",
         }
 
         for phrase, canonical in synonym_map.items():
             normalized = normalized.replace(phrase, canonical)
 
         # Canonicalize common intent buckets after phrase replacement.
-        if "wifi" in normalized:
+        # Priority order matters for matching
+        if "order" in normalized:
+            normalized = "order"
+        elif "wifi" in normalized:
             normalized = "wifi"
-        elif "giờ mở cửa" in normalized:
+        elif "giờ mở cửa" in normalized or "mở cửa" in normalized:
             normalized = "giờ mở cửa"
-        elif "giờ đóng cửa" in normalized:
+        elif "giờ đóng cửa" in normalized or "đóng cửa" in normalized:
             normalized = "giờ đóng cửa"
-        elif "thanh toán" in normalized:
+        elif "thanh toán" in normalized or "qr" in normalized or "thẻ" in normalized:
             normalized = "thanh toán"
-        elif "gợi ý" in normalized or "ít ngọt" in normalized:
-            normalized = "gợi ý ít ngọt"
+        elif "giao hàng" in normalized or "delivery" in normalized:
+            normalized = "giao hàng"
+        elif "sinh nhật" in normalized or "birthday" in normalized:
+            normalized = "sinh nhật"
+        elif "chỗ ngồi" in normalized or "làm việc" in normalized:
+            normalized = "chỗ ngồi"
+        elif "gợi ý" in normalized or "ít ngọt" in normalized or "ngon" in normalized:
+            normalized = "gợi ý"
+        elif "recommend" in normalized or "suggest" in normalized:
+            normalized = "gợi ý"
 
         return normalized
 
