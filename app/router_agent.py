@@ -19,13 +19,23 @@ Production extension:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Dict
 
 import joblib
+import requests
+
+from app.config import (
+    OLLAMA_BASE_URL,
+    SLM_ROUTER_ENABLED,
+    SLM_ROUTER_MODEL,
+    SLM_ROUTER_TIMEOUT_SECONDS,
+)
 
 ROUTER_MODEL_PATH = Path("models/router_model.joblib")
 _learned_router_model = None
+VALID_INTENTS = {"order", "consultant", "faq", "ignore"}
 
 ORDER_KEYWORDS = [
     "lấy",
@@ -147,7 +157,7 @@ def classify_intent_learned(query: str) -> Dict[str, str]:
         if confidence is not None and confidence < 0.50:
             return {}
 
-        if intent not in {"order", "consultant", "faq", "ignore"}:
+        if intent not in VALID_INTENTS:
             return {}
 
         result = {"action": intent, "method": "learned_router"}
@@ -156,6 +166,66 @@ def classify_intent_learned(query: str) -> Dict[str, str]:
         return result
     except Exception:
         return {}
+
+
+def classify_intent_slm(text: str) -> Dict[str, str]:
+    """
+    Classify user intent using a real small language model via Ollama.
+
+    This implements the SLM router path using qwen2.5:1.5b (<3B).
+    If the SLM is unavailable or returns invalid output, the system
+    falls back to the learned router and rule-based router.
+    """
+    if not SLM_ROUTER_ENABLED:
+        return {}
+
+    prompt = f"""
+You are an intent classifier for an F&B assistant.
+
+Classify the user query into exactly one intent:
+- order: user wants to order/buy/add a menu item
+- consultant: user asks for recommendation or preference-based suggestion
+- faq: user asks about store information, wifi, opening hours, payment, invoice
+- ignore: greeting, noise, unclear or out-of-domain small talk
+
+Return JSON only in this exact format:
+{{"action":"faq"}}
+
+User query:
+{text}
+"""
+
+    try:
+        response = requests.post(
+            f"{OLLAMA_BASE_URL}/api/generate",
+            json={
+                "model": SLM_ROUTER_MODEL,
+                "prompt": prompt,
+                "stream": False,
+                "format": "json",
+                "options": {
+                    "temperature": 0,
+                    "num_predict": 30,
+                },
+            },
+            timeout=SLM_ROUTER_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+
+        raw = response.json().get("response", "{}")
+        data = json.loads(raw)
+        action = data.get("action")
+
+        if action in VALID_INTENTS:
+            return {
+                "action": action,
+                "method": "slm_router",
+                "model": SLM_ROUTER_MODEL,
+            }
+    except Exception:
+        return {}
+
+    return {}
 
 
 def classify_intent(text: str) -> Dict[str, str]:
@@ -171,25 +241,29 @@ def classify_intent(text: str) -> Dict[str, str]:
     query = text.lower().strip()
 
     if not query or len(query) <= 2:
-        return {"action": "ignore"}
+        return {"action": "ignore", "method": "rule_based"}
+
+    slm_result = classify_intent_slm(text)
+    if slm_result:
+        return slm_result
 
     learned_result = classify_intent_learned(query)
     if learned_result:
         return learned_result
 
     if contains_any(query, FAQ_KEYWORDS):
-        return {"action": "faq"}
+        return {"action": "faq", "method": "rule_based"}
 
     if contains_any(query, CONSULTANT_KEYWORDS):
-        return {"action": "consultant"}
+        return {"action": "consultant", "method": "rule_based"}
 
     if contains_any(query, ORDER_KEYWORDS):
-        return {"action": "order"}
+        return {"action": "order", "method": "rule_based"}
 
     if contains_any(query, IGNORE_KEYWORDS):
-        return {"action": "ignore"}
+        return {"action": "ignore", "method": "rule_based"}
 
     if "?" in query or query.startswith(("cho hỏi", "hỏi", "em hỏi")):
-        return {"action": "faq"}
+        return {"action": "faq", "method": "rule_based"}
 
-    return {"action": "ignore"}
+    return {"action": "ignore", "method": "rule_based"}
