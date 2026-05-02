@@ -19,6 +19,7 @@ Router, multi-agent orchestration, RAG, session, cache, and API layers remain un
 - Backend: Ollama local inference
 
 ## Final System Metrics (Real Run)
+See `report/benchmark_final.txt` for full benchmark output.
 
 - Router Accuracy: 0.9538
 - Retrieval Coverage: 0.9538

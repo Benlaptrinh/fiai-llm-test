@@ -229,7 +229,7 @@ Run:
 python scripts/benchmark.py
 ```
 
-Current sample output:
+Current sample output (see `report/benchmark_final.txt`):
 
 - Router Accuracy: `0.9538`
 - Retrieval Coverage: `0.9538`

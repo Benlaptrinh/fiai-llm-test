@@ -53,3 +53,5 @@ GET /health
 ```
 
 Full JSON responses are in `report/demo_chat_examples_2026-04-30.json`.
+
+Full benchmark results are in `report/benchmark_final.txt`.
