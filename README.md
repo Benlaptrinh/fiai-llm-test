@@ -5,7 +5,7 @@ End-to-end multi-agent LLM system with RAG, local inference, and production-read
 This repository contains an end-to-end MVP for a multi-agent F&B assistant:
 
 - FastAPI serving layer
-- Rule-based Router Agent
+- Hybrid Router Agent (learned + rule fallback)
 - Specialized agents: `order`, `consultant`, `faq`, `ignore`
 - RAG pipeline with ChromaDB
 - Local LLM inference via Ollama
@@ -20,7 +20,7 @@ User Query -> Router -> Specialized Agent -> RAG Retrieval -> LLM Generation -> 
 
 ```mermaid
 flowchart LR
-  U["User Query"] --> R["Router Agent (rule-based)"]
+  U["User Query"] --> R["Router Agent (learned + fallback)"]
   R -->|order| OA["Order Agent"]
   R -->|consultant| CA["Consultant Agent"]
   R -->|faq| FA["FAQ Agent"]
@@ -37,7 +37,7 @@ flowchart LR
 
 Core components:
 
-- `app/router_agent.py`: deterministic intent routing
+- `app/router_agent.py`: learned router with deterministic fallback
 - `app/agents.py`: domain-specific behavior and prompting
 - `app/rag.py`: ChromaDB retrieval wrapper
 - `app/main.py`: API orchestration, cache, sessions
@@ -92,6 +92,23 @@ Ingest into ChromaDB:
 ```bash
 python scripts/ingest.py
 ```
+
+## Learned Router
+Train a lightweight router classifier from synthetic intent labels:
+
+```bash
+python scripts/train_router.py
+```
+
+Artifacts:
+
+- `models/router_model.joblib`
+- `report/router_training_report.txt`
+
+Runtime behavior:
+
+- If the trained model is available and confidence is high enough, routing uses learned prediction.
+- If model is missing/uncertain/unavailable, routing falls back to deterministic rule-based logic.
 
 ## Run API
 ```bash
