@@ -2,18 +2,21 @@
 RAGStore: Retrieval-Augmented Generation layer.
 
 This module stores and retrieves F&B knowledge using ChromaDB.
-It supports intent-aware retrieval for menu, FAQ and document knowledge.
+It supports:
+- Intent-aware retrieval for menu, FAQ and document knowledge
+- Hybrid search (vector + optional graph)
+- Cross-encoder reranking (BGE Reranker v2)
 
 Prototype:
 - ChromaDB vector store
 - multilingual MiniLM embeddings
 - intent-aware filtering
+- cross-encoder reranking
 
 Production extension:
 - Neo4j Graph RAG
 - entity extraction
 - graph expansion
-- reranking
 """
 
 from __future__ import annotations
@@ -25,9 +28,77 @@ from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunct
 
 from app.config import CHROMA_DIR, EMBEDDING_MODEL
 
+# Lazy import for reranker to avoid heavy import overhead
+_reranker_model = None
+
+
+def _get_reranker():
+    """
+    Lazily load BGE Cross-Encoder reranker.
+    Falls back to no-op if unavailable.
+    """
+    global _reranker_model
+    if _reranker_model is not None:
+        return _reranker_model
+    try:
+        from sentence_transformers import CrossEncoder
+        _reranker_model = CrossEncoder(
+            "BAAI/bge-reranker-v2-m3",
+            max_length=512,
+            trust_remote_code=True,
+        )
+        return _reranker_model
+    except Exception:
+        _reranker_model = None
+        return None
+
+
+def _rerank_documents(
+    query: str,
+    documents: List[Dict[str, Any]],
+    top_k: int = 5,
+    min_score: float = 0.0,
+) -> List[Dict[str, Any]]:
+    """
+    Rerank documents using BGE Reranker v2.
+
+    Args:
+        query: original user query
+        documents: list of documents with 'text' key
+        top_k: number of top results to return after reranking
+        min_score: minimum relevance score threshold (0.0 = no filter)
+
+    Returns:
+        reranked documents with 'rerank_score' added
+    """
+    reranker = _get_reranker()
+    if reranker is None or not documents:
+        return documents[:top_k]
+
+    try:
+        doc_texts = [doc.get("text", "") for doc in documents]
+        scores = reranker.predict(
+            [(query, doc_text) for doc_text in doc_texts],
+            show_progress_bar=False,
+        )
+
+        # Attach scores and sort
+        scored_docs = []
+        for doc, score in zip(documents, scores):
+            doc = dict(doc)
+            doc["rerank_score"] = float(score)
+            if score >= min_score:
+                scored_docs.append(doc)
+
+        scored_docs.sort(key=lambda d: d["rerank_score"], reverse=True)
+        return scored_docs[:top_k]
+
+    except Exception:
+        return documents[:top_k]
+
 
 class RAGStore:
-    """Lightweight vector store wrapper using ChromaDB."""
+    """Lightweight vector store wrapper using ChromaDB with optional reranking."""
 
     def __init__(self) -> None:
         self.embedding_fn = SentenceTransformerEmbeddingFunction(
@@ -40,7 +111,13 @@ class RAGStore:
         )
 
     def search(
-        self, query: str, intent: Optional[str] = None, top_k: int = 5
+        self,
+        query: str,
+        intent: Optional[str] = None,
+        top_k: int = 5,
+        use_reranker: bool = True,
+        rerank_top_k: int = 5,
+        rerank_min_score: float = 0.0,
     ) -> List[Dict[str, Any]]:
         """
         Search relevant knowledge by query and intent.
@@ -48,10 +125,13 @@ class RAGStore:
         Args:
             query: user query
             intent: order / consultant / faq / ignore
-            top_k: number of retrieved documents
+            top_k: number of documents to retrieve from vector store (before reranking)
+            use_reranker: whether to apply BGE reranker (B1.2)
+            rerank_top_k: number of results to return after reranking
+            rerank_min_score: minimum rerank score threshold
 
         Returns:
-            retrieved documents with text, metadata and distance
+            retrieved documents with text, metadata, distance, and optionally rerank_score
         """
         where = None
         if intent in ["order", "consultant"]:
@@ -59,13 +139,15 @@ class RAGStore:
         elif intent == "faq":
             where = {"domain": {"$in": ["faq", "doc"]}}
 
+        # Retrieve more candidates than final result for reranking
+        fetch_k = max(top_k * 3, 10) if use_reranker else top_k
+
         try:
             result = self.collection.query(
-                query_texts=[query], n_results=top_k, where=where
+                query_texts=[query], n_results=fetch_k, where=where
             )
         except Exception:
-            # Fallback for Chroma filter compatibility differences.
-            result = self.collection.query(query_texts=[query], n_results=top_k)
+            result = self.collection.query(query_texts=[query], n_results=fetch_k)
 
         docs: List[Dict[str, Any]] = []
         if result and result.get("documents"):
@@ -75,6 +157,15 @@ class RAGStore:
                 if result.get("distances"):
                     distance = result["distances"][0][i]
                 docs.append({"text": doc, "metadata": metadata, "distance": distance})
+
+        # Apply reranking if enabled
+        if use_reranker and docs:
+            docs = _rerank_documents(
+                query=query,
+                documents=docs,
+                top_k=rerank_top_k,
+                min_score=rerank_min_score,
+            )
 
         return docs
 
