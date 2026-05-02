@@ -10,13 +10,20 @@ User Query
 -> Response with sources, session and cache
 """
 
+import asyncio
 import json
+from typing import Any, Callable
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.cache import SimpleCache
-from app.config import APP_NAME, LLM_BACKEND
+from app.config import (
+    APP_NAME,
+    LLM_BACKEND,
+    MAX_CONCURRENT_LLM_REQUESTS,
+    QUEUE_TIMEOUT_SECONDS,
+)
 from app.agents import (
     ConsultantAgent,
     FAQAgent,
@@ -39,6 +46,7 @@ rag_store = RAGStore()
 graph_rag_store = GraphRAGStore()
 session_store = SessionStore()
 cache = SimpleCache()
+llm_semaphore = asyncio.Semaphore(MAX_CONCURRENT_LLM_REQUESTS)
 
 order_agent = OrderAgent(rag_store, graph_rag_store)
 consultant_agent = ConsultantAgent(rag_store, graph_rag_store)
@@ -70,12 +78,13 @@ def health() -> dict:
         "rag_documents": rag_store.count(),
         "graph_rag_enabled": graph_rag_store.is_available(),
         "cache_backend": cache.backend_name(),
+        "max_concurrent_llm_requests": MAX_CONCURRENT_LLM_REQUESTS,
+        "queue_timeout_seconds": QUEUE_TIMEOUT_SECONDS,
     }
 
 
-@app.post("/chat", response_model=ChatResponse)
-def chat(request: ChatRequest) -> ChatResponse:
-    """Main chat endpoint."""
+def process_chat_request(request: ChatRequest) -> ChatResponse:
+    """Process one chat request with full routing, RAG, cache and session updates."""
     if is_guardrail_blocked(request.query):
         return ChatResponse(
             session_id=request.session_id,
@@ -132,6 +141,35 @@ def chat(request: ChatRequest) -> ChatResponse:
         sources=sources,
         cached=False,
     )
+
+
+async def run_with_llm_queue(
+    func: Callable[..., ChatResponse],
+    *args: Any,
+    **kwargs: Any,
+) -> ChatResponse:
+    """Limit concurrent LLM request processing with a bounded queue timeout."""
+    try:
+        await asyncio.wait_for(
+            llm_semaphore.acquire(),
+            timeout=QUEUE_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Server is busy. Please retry later.",
+        ) from exc
+
+    try:
+        return await asyncio.to_thread(func, *args, **kwargs)
+    finally:
+        llm_semaphore.release()
+
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest) -> ChatResponse:
+    """Main chat endpoint with concurrency queue control."""
+    return await run_with_llm_queue(process_chat_request, request)
 
 
 @app.post("/chat/stream")
