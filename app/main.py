@@ -15,6 +15,7 @@ from fastapi import FastAPI
 from app.cache import SimpleCache
 from app.config import APP_NAME
 from app.agents import ConsultantAgent, FAQAgent, IgnoreAgent, OrderAgent
+from app.guardrails import is_guardrail_blocked
 from app.rag import RAGStore
 from app.router_agent import classify_intent
 from app.schemas import ChatRequest, ChatResponse
@@ -41,6 +42,18 @@ def health() -> dict:
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
     """Main chat endpoint."""
+    if is_guardrail_blocked(request.query):
+        return ChatResponse(
+            session_id=request.session_id,
+            intent="guardrail",
+            answer=(
+                "Xin lỗi, mình không thể hỗ trợ nội dung này. "
+                "Bạn vui lòng hỏi về đặt món, tư vấn món hoặc thông tin quán."
+            ),
+            sources=[],
+            cached=False,
+        )
+
     cached = cache.get(request.query)
     if cached:
         return ChatResponse(

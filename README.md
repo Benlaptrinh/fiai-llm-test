@@ -10,6 +10,7 @@ This repository contains an end-to-end MVP for a multi-agent F&B assistant:
 - RAG pipeline with ChromaDB
 - Local LLM inference via Ollama
 - Session history + normalized cache
+- Lightweight production guardrail for harmful out-of-scope content
 - Benchmark script with latency and routing metrics
 
 ## Architecture
@@ -123,6 +124,12 @@ Current sample output:
 - Average Latency: `2.8177s`
 - P95 Latency: `10.3994s`
 - Cache Hit Latency: `0.0029s`
+
+## Guardrails And Streaming Notes
+- Guardrail blocks unsafe harmful prompts before routing/retrieval/generation.
+- Cache uses normalized query keys to reduce duplicate LLM calls and improve latency.
+- Retrieval is filtered by intent to improve relevance and reduce noise.
+- The system can be extended to support token streaming via SSE in production.
 
 ## Demo Evidence
 Real API responses for order, consultant, FAQ, ignore, and repeated FAQ cache-hit are saved in:
