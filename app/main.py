@@ -26,6 +26,7 @@ from app.agents import (
     format_sources,
 )
 from app.guardrails import is_guardrail_blocked
+from app.graph_rag import GraphRAGStore
 from app.rag import RAGStore
 from app.router_agent import classify_intent
 from app.schemas import ChatRequest, ChatResponse
@@ -35,19 +36,41 @@ from app.utils import call_llm, stream_ollama
 app = FastAPI(title=APP_NAME)
 
 rag_store = RAGStore()
+graph_rag_store = GraphRAGStore()
 session_store = SessionStore()
 cache = SimpleCache()
 
-order_agent = OrderAgent(rag_store)
-consultant_agent = ConsultantAgent(rag_store)
-faq_agent = FAQAgent(rag_store)
-ignore_agent = IgnoreAgent(rag_store)
+order_agent = OrderAgent(rag_store, graph_rag_store)
+consultant_agent = ConsultantAgent(rag_store, graph_rag_store)
+faq_agent = FAQAgent(rag_store, graph_rag_store)
+ignore_agent = IgnoreAgent(rag_store, graph_rag_store)
+
+
+def hybrid_retrieve(query: str, intent: str, top_k: int = 5):
+    """
+    Combine Graph RAG lite with vector retrieval.
+
+    Graph retrieval is attempted first.
+    Chroma vector retrieval is used as fallback or supplement.
+    """
+    graph_docs = []
+    if graph_rag_store.is_available():
+        graph_docs = graph_rag_store.search(query, intent=intent, top_k=top_k)
+
+    vector_docs = rag_store.search(query, intent=intent, top_k=top_k)
+    combined = graph_docs + vector_docs
+    return combined[: top_k * 2]
 
 
 @app.get("/health")
 def health() -> dict:
     """Health check endpoint."""
-    return {"status": "ok", "rag_documents": rag_store.count()}
+    return {
+        "status": "ok",
+        "rag_documents": rag_store.count(),
+        "graph_rag_enabled": graph_rag_store.is_available(),
+        "cache_backend": cache.backend_name(),
+    }
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -181,7 +204,7 @@ def chat_stream(request: ChatRequest) -> StreamingResponse:
     history = session_store.get_history(request.session_id)
 
     if intent in ["order", "consultant", "faq"]:
-        docs = rag_store.search(request.query, intent=intent, top_k=5)
+        docs = hybrid_retrieve(request.query, intent=intent, top_k=5)
         sources = format_sources(docs)
     else:
         docs = []

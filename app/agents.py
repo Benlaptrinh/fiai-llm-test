@@ -15,8 +15,9 @@ Each agent has:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
+from app.graph_rag import GraphRAGStore
 from app.rag import RAGStore
 from app.utils import call_llm
 
@@ -126,8 +127,22 @@ Trả lời bằng tiếng Việt, tự nhiên, ngắn gọn."""
 class BaseAgent:
     """Base class for all specialized agents."""
 
-    def __init__(self, rag: RAGStore):
+    def __init__(self, rag: RAGStore, graph_rag: Optional[GraphRAGStore] = None):
         self.rag = rag
+        self.graph_rag = graph_rag
+
+    def retrieve(self, query: str, intent: str, top_k: int = 5) -> List[Dict[str, Any]]:
+        """
+        Combine graph retrieval with vector retrieval.
+
+        Graph retrieval is optional and can be disabled by configuration.
+        """
+        graph_docs: List[Dict[str, Any]] = []
+        if self.graph_rag and self.graph_rag.is_available():
+            graph_docs = self.graph_rag.search(query, intent=intent, top_k=top_k)
+
+        vector_docs = self.rag.search(query, intent=intent, top_k=top_k)
+        return (graph_docs + vector_docs)[: top_k * 2]
 
     def answer(self, query: str, history: List[Dict[str, str]]) -> Dict[str, Any]:
         raise NotImplementedError
@@ -137,7 +152,7 @@ class OrderAgent(BaseAgent):
     """Agent for handling order-related queries."""
 
     def answer(self, query: str, history: List[Dict[str, str]]) -> Dict[str, Any]:
-        docs = self.rag.search(query, intent="order", top_k=5)
+        docs = self.retrieve(query, intent="order", top_k=5)
         prompt = build_agent_prompt("order", query, history, docs)
         return {"answer": call_llm(prompt), "sources": format_sources(docs)}
 
@@ -146,7 +161,7 @@ class ConsultantAgent(BaseAgent):
     """Agent for recommendation and consulting."""
 
     def answer(self, query: str, history: List[Dict[str, str]]) -> Dict[str, Any]:
-        docs = self.rag.search(query, intent="consultant", top_k=5)
+        docs = self.retrieve(query, intent="consultant", top_k=5)
         prompt = build_agent_prompt("consultant", query, history, docs)
         return {"answer": call_llm(prompt), "sources": format_sources(docs)}
 
@@ -155,7 +170,7 @@ class FAQAgent(BaseAgent):
     """Agent for FAQ and policy questions."""
 
     def answer(self, query: str, history: List[Dict[str, str]]) -> Dict[str, Any]:
-        docs = self.rag.search(query, intent="faq", top_k=5)
+        docs = self.retrieve(query, intent="faq", top_k=5)
         prompt = build_agent_prompt("faq", query, history, docs)
         return {"answer": call_llm(prompt), "sources": format_sources(docs)}
 
