@@ -131,17 +131,22 @@ class BaseAgent:
         self.rag = rag
         self.graph_rag = graph_rag
 
-    def retrieve(self, query: str, intent: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    def retrieve(
+        self, query: str, intent: str, top_k: int = 5, use_reranker: bool = True
+    ) -> List[Dict[str, Any]]:
         """
         Combine graph retrieval with vector retrieval.
 
         Graph retrieval is optional and can be disabled by configuration.
+        Uses BGE Reranker v2 for improved relevance ordering (B1.2).
         """
         graph_docs: List[Dict[str, Any]] = []
         if self.graph_rag and self.graph_rag.is_available():
             graph_docs = self.graph_rag.search(query, intent=intent, top_k=top_k)
 
-        vector_docs = self.rag.search(query, intent=intent, top_k=top_k)
+        vector_docs = self.rag.search(
+            query, intent=intent, top_k=top_k, use_reranker=use_reranker
+        )
         return (graph_docs + vector_docs)[: top_k * 2]
 
     def answer(self, query: str, history: List[Dict[str, str]]) -> Dict[str, Any]:

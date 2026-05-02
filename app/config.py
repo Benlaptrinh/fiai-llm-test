@@ -49,8 +49,14 @@ ENABLE_REDIS_CACHE = os.getenv("ENABLE_REDIS_CACHE", "true").lower() == "true"
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "3600"))
 
+# Semantic cache (embedding-based paraphrase matching)
+SEMANTIC_CACHE_ENABLED = os.getenv("SEMANTIC_CACHE_ENABLED", "true").lower() == "true"
+SEMANTIC_CACHE_THRESHOLD = float(os.getenv("SEMANTIC_CACHE_THRESHOLD", "0.92"))
+
 SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "1800"))
 MAX_HISTORY_TURNS = int(os.getenv("MAX_HISTORY_TURNS", "5"))
+# Auto-summarize when history exceeds this many tokens (~70% of 4096 context window)
+SESSION_SUMMARY_THRESHOLD_TOKENS = int(os.getenv("SESSION_SUMMARY_THRESHOLD_TOKENS", "2800"))
 
 MAX_CONCURRENT_LLM_REQUESTS = int(os.getenv("MAX_CONCURRENT_LLM_REQUESTS", "2"))
 QUEUE_TIMEOUT_SECONDS = int(os.getenv("QUEUE_TIMEOUT_SECONDS", "60"))

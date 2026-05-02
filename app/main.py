@@ -23,6 +23,7 @@ from app.config import (
     LLM_BACKEND,
     MAX_CONCURRENT_LLM_REQUESTS,
     QUEUE_TIMEOUT_SECONDS,
+    SEMANTIC_CACHE_THRESHOLD,
     SLM_ROUTER_ENABLED,
     SLM_ROUTER_MODEL,
 )
@@ -38,6 +39,7 @@ from app.guardrails import is_guardrail_blocked
 from app.graph_rag import GraphRAGStore
 from app.rag import RAGStore
 from app.router_agent import classify_intent
+from app.intent_extractor import extract_intent
 from app.schemas import ChatRequest, ChatResponse
 from app.session_store import SessionStore
 from app.utils import call_llm, stream_ollama
@@ -84,7 +86,25 @@ def health() -> dict:
         "queue_timeout_seconds": QUEUE_TIMEOUT_SECONDS,
         "slm_router_enabled": SLM_ROUTER_ENABLED,
         "slm_router_model": SLM_ROUTER_MODEL,
+        "semantic_cache_threshold": SEMANTIC_CACHE_THRESHOLD,
     }
+
+
+@app.post("/cache/invalidate")
+def invalidate_cache() -> dict:
+    """
+    Invalidate all cache entries.
+
+    Should be called when the knowledge base (menu/FAQ) is updated.
+    """
+    cache.invalidate()
+    return {"status": "ok", "message": "Cache invalidated"}
+
+
+@app.get("/cache/stats")
+def cache_stats() -> dict:
+    """Return cache statistics."""
+    return cache.stats()
 
 
 def process_chat_request(request: ChatRequest) -> ChatResponse:
@@ -111,17 +131,29 @@ def process_chat_request(request: ChatRequest) -> ChatResponse:
             cached=True,
         )
 
-    intent = classify_intent(request.query)["action"]
+    routing_result = classify_intent(request.query)
+    intent = routing_result["action"]
+
+    # Intent extraction for structured parsing (C2.1)
+    # Extract subject/action/context for non-ignore intents
+    query_for_agent = request.query
+    if intent not in ("ignore", "guardrail"):
+        extraction = extract_intent(request.query)
+        # Prepend extracted context to enrich agent prompt
+        if extraction.get("context"):
+            query_for_agent = f"{extraction['context']} | {request.query}"
+        routing_result["extraction"] = extraction
+
     history = session_store.get_history(request.session_id)
 
     if intent == "order":
-        result = order_agent.answer(request.query, history)
+        result = order_agent.answer(query_for_agent, history)
     elif intent == "consultant":
-        result = consultant_agent.answer(request.query, history)
+        result = consultant_agent.answer(query_for_agent, history)
     elif intent == "faq":
-        result = faq_agent.answer(request.query, history)
+        result = faq_agent.answer(query_for_agent, history)
     else:
-        result = ignore_agent.answer(request.query, history)
+        result = ignore_agent.answer(query_for_agent, history)
 
     answer = result["answer"]
     sources = result.get("sources", [])
@@ -242,15 +274,17 @@ def chat_stream(request: ChatRequest) -> StreamingResponse:
 
         return StreamingResponse(cached_event_stream(), media_type="text/event-stream")
 
-    intent = classify_intent(request.query)["action"]
-    history = session_store.get_history(request.session_id)
+    routing_result = classify_intent(request.query)
+    intent = routing_result["action"]
 
-    if intent in ["order", "consultant", "faq"]:
-        docs = hybrid_retrieve(request.query, intent=intent, top_k=5)
-        sources = format_sources(docs)
-    else:
-        docs = []
-        sources = []
+    # Intent extraction for structured parsing (C2.1)
+    query_for_agent = request.query
+    if intent not in ("ignore", "guardrail"):
+        extraction = extract_intent(request.query)
+        if extraction.get("context"):
+            query_for_agent = f"{extraction['context']} | {request.query}"
+
+    history = session_store.get_history(request.session_id)
 
     if intent == "ignore":
         ignore_answer = ignore_agent.answer(request.query, history)["answer"]
@@ -284,7 +318,14 @@ def chat_stream(request: ChatRequest) -> StreamingResponse:
 
         return StreamingResponse(ignore_event_stream(), media_type="text/event-stream")
 
-    prompt = build_agent_prompt(intent, request.query, history, docs)
+    if intent in ["order", "consultant", "faq"]:
+        docs = hybrid_retrieve(query_for_agent, intent=intent, top_k=5)
+        sources = format_sources(docs)
+    else:
+        docs = []
+        sources = []
+
+    prompt = build_agent_prompt(intent, query_for_agent, history, docs)
 
     def event_stream():
         metadata = {
