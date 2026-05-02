@@ -144,7 +144,7 @@ def classify_intent_learned(query: str) -> Dict[str, str]:
             confidence = float(max(probabilities))
 
         # Fall back to rule-based routing on uncertain predictions.
-        if confidence is not None and confidence < 0.45:
+        if confidence is not None and confidence < 0.50:
             return {}
 
         if intent not in {"order", "consultant", "faq", "ignore"}:
