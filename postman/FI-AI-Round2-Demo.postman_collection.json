@@ -158,6 +158,30 @@
         },
         "url": "{{base_url}}/chat"
       }
+    },
+    {
+      "name": "Health Final",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/health"
+      }
+    },
+    {
+      "name": "Paraphrase Cache",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"Cho em xin wifi\",\n  \"session_id\": \"{{session_id}}\"\n}"
+        },
+        "url": "{{base_url}}/chat"
+      }
     }
   ]
 }

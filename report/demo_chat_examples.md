@@ -22,8 +22,34 @@ Backend: Ollama `qwen2.5:7b`
    Intent: `ignore`  
    Cached: `false`
 
-5. Query: `Wifi tên gì vậy?` (repeat)  
-   Intent: `faq`  
+5. Query: `Wifi tên gì vậy?` (repeat)
+   Intent: `faq`
    Cached: `true`
+
+## Paraphrase Cache Test
+
+Query 1: Wifi tên gì vậy?
+Intent: faq
+Cached: false
+
+Query 2: Cho em xin wifi
+Intent: faq
+Cached: true
+
+## Health Check (Final Runtime)
+
+GET /health
+
+```
+{
+  "status": "ok",
+  "rag_documents": 160,
+  "graph_rag_enabled": true,
+  "cache_backend": "redis",
+  "max_concurrent_llm_requests": 2,
+  "queue_timeout_seconds": 60,
+  "slm_router_enabled": false
+}
+```
 
 Full JSON responses are in `report/demo_chat_examples_2026-04-30.json`.

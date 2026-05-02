@@ -13,6 +13,20 @@ This repository contains an end-to-end MVP for a multi-agent F&B assistant:
 - Lightweight production guardrail for harmful out-of-scope content
 - Benchmark script with latency and routing metrics
 
+## System Enhancements
+
+The system has been extended beyond the initial MVP with:
+
+- Learned Router (TF-IDF + Logistic Regression) with rule-based fallback
+- Optional SLM Router using qwen2.5:1.5b (<3B model) for intent classification
+- Hybrid RAG: Neo4j Graph + ChromaDB Vector retrieval
+- Redis cache with paraphrase-lite normalization
+- Concurrency control with request queue for LLM calls
+- Streaming responses via SSE endpoint (/chat/stream)
+- Production guardrails for unsafe queries
+
+**Performance Note:** Latency is slightly higher (avg ~2.5s) compared to basic setups due to hybrid retrieval (Graph + Vector) and queue control. This trade-off improves robustness, retrieval quality, and system scalability under concurrent load.
+
 ## Architecture
 User Query -> Router -> Specialized Agent -> RAG Retrieval -> LLM Generation -> Response
 
@@ -129,6 +143,13 @@ The SLM router classifies user queries into:
 If the SLM router is disabled or unavailable, the system falls back to the learned router and then the rule-based router.
 This keeps the production path robust while still supporting a real `<3B` intent model.
 
+**Note:** SLM router is optional and disabled by default for benchmark consistency. Enable when needed:
+
+```bash
+export SLM_ROUTER_ENABLED=true
+export SLM_ROUTER_MODEL=qwen2.5:1.5b
+```
+
 ## Run API
 ```bash
 export OLLAMA_MODEL=qwen2.5:7b
@@ -210,11 +231,11 @@ python scripts/benchmark.py
 
 Current sample output:
 
-- Router Accuracy: `0.8538`
-- Retrieval Coverage: `0.8538`
-- Average Latency: `2.8177s`
-- P95 Latency: `10.3994s`
-- Cache Hit Latency: `0.0029s`
+- Router Accuracy: `0.9538`
+- Retrieval Coverage: `0.9538`
+- Average Latency: `2.5019s`
+- P95 Latency: `10.9504s`
+- Cache Hit Latency: `0.0033s`
 
 ## Guardrails And Streaming Notes
 - Guardrail blocks unsafe harmful prompts before routing/retrieval/generation.

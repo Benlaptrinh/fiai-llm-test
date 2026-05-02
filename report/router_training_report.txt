@@ -17,3 +17,7 @@ Accuracy: 1.0000
    macro avg     1.0000    1.0000    1.0000        33
 weighted avg     1.0000    1.0000    1.0000        33
 
+Note: This learned router is used in combination with:
+- Rule-based fallback
+- Optional SLM router (qwen2.5:1.5b)
+
