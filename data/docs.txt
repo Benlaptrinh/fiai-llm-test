@@ -67,10 +67,10 @@ MenuItem cần có tên, category, size, price, caffeine, sweetness, tags và de
 Chính sách retrieval:
 RAG nên ưu tiên menu cho order và consultant, ưu tiên FAQ/document cho câu hỏi thông tin chung.
 
-Chính sách reranking tương lai:
+Chính sách reranking:
 Production có thể thêm reranker để cải thiện độ chính xác top-k.
 
-Chính sách graph RAG tương lai:
+Chính sách graph RAG:
 Production có thể thay ChromaDB bằng Neo4j để lưu MenuItem, Chunk, Entity và relationships.
 
 Chính sách lỗi hệ thống:

@@ -5,26 +5,26 @@ id,question,answer
 4,Có thanh toán bằng thẻ không?,"Quán hỗ trợ tiền mặt, thẻ ngân hàng và ví điện tử."
 5,Có thanh toán QR không?,Quán có hỗ trợ thanh toán QR qua một số ví điện tử.
 6,Có giao hàng không?,Quán hỗ trợ giao hàng qua các ứng dụng đối tác.
-7,Có chỗ ngồi làm việc không?,Một số chi nhánh có khu vực ngồi làm việc và ổ cắm điện.
-8,Có ổ cắm điện không?,Một số chi nhánh có ổ cắm điện gần khu vực ngồi làm việc.
-9,Có xuất hóa đơn không?,Quán có hỗ trợ xuất hóa đơn theo yêu cầu.
-10,Có món ít ngọt không?,Khách có thể yêu cầu giảm đường hoặc chọn món ít ngọt.
-11,Có món không caffeine không?,"Có thể chọn trà trái cây, freeze hoặc một số món không cà phê."
-12,Có đồ ăn nhẹ không?,"Quán có bánh mì, croissant, tiramisu và một số món ăn nhẹ."
-13,Có giảm giá sinh viên không?,Khuyến mãi phụ thuộc từng thời điểm và từng chi nhánh.
-14,Có chỗ đậu xe không?,"Một số chi nhánh có chỗ đậu xe, vui lòng hỏi nhân viên tại quầy."
-15,Có phòng họp không?,Một số chi nhánh có không gian phù hợp họp nhóm nhỏ.
-16,Có đặt bàn trước không?,Khách có thể liên hệ chi nhánh để hỏi về đặt bàn trước.
-17,Có đổi món sau khi thanh toán không?,Việc đổi món sau thanh toán phụ thuộc tình trạng xử lý đơn hàng.
-18,Có hoàn tiền không?,Chính sách hoàn tiền phụ thuộc từng trường hợp cụ thể.
-19,Có size lớn không?,"Nhiều món có size S, M và L tùy loại đồ uống."
-20,Có món nóng không?,Một số món cà phê và trà có thể phục vụ nóng.
-21,Có món lạnh không?,Hầu hết đồ uống đều có phiên bản lạnh hoặc đá.
-22,Có món cho trẻ em không?,Khách có thể chọn một số món ít caffeine hoặc không caffeine.
-23,Có món chay không?,"Một số món ăn nhẹ có thể phù hợp, vui lòng hỏi nhân viên để xác nhận."
-24,Có nhận đặt số lượng lớn không?,Quán có thể hỗ trợ đơn số lượng lớn tùy chi nhánh.
-25,Có hỗ trợ sinh nhật không?,Chính sách hỗ trợ sinh nhật phụ thuộc từng chương trình.
-26,Có giao hàng nội bộ không?,Quán thường giao hàng qua đối tác giao nhận.
+7,Có giao hàng nội bộ không?,Quán thường giao hàng qua đối tác giao nhận.
+8,Có chỗ ngồi làm việc không?,Một số chi nhánh có khu vực ngồi làm việc và ổ cắm điện.
+9,Có ổ cắm điện không?,Một số chi nhánh có ổ cắm điện gần khu vực ngồi làm việc.
+10,Có xuất hóa đơn không?,Quán có hỗ trợ xuất hóa đơn theo yêu cầu.
+11,Có món ít ngọt không?,Khách có thể yêu cầu giảm đường hoặc chọn món ít ngọt.
+12,Có món không caffeine không?,"Có thể chọn trà trái cây, freeze hoặc một số món không cà phê."
+13,Có đồ ăn nhẹ không?,"Quán có bánh mì, croissant, tiramisu và một số món ăn nhẹ."
+14,Có giảm giá sinh viên không?,Khuyến mãi phụ thuộc từng thời điểm và từng chi nhánh.
+15,Có chỗ đậu xe không?,"Một số chi nhánh có chỗ đậu xe, vui lòng hỏi nhân viên tại quầy."
+16,Có phòng họp không?,Một số chi nhánh có không gian phù hợp họp nhóm nhỏ.
+17,Có đặt bàn trước không?,Khách có thể liên hệ chi nhánh để hỏi về đặt bàn trước.
+18,Có đổi món sau khi thanh toán không?,Việc đổi món sau thanh toán phụ thuộc tình trạng xử lý đơn hàng.
+19,Có hoàn tiền không?,Chính sách hoàn tiền phụ thuộc từng trường hợp cụ thể.
+20,Có size lớn không?,"Nhiều món có size S, M và L tùy loại đồ uống."
+21,Có món nóng không?,Một số món cà phê và trà có thể phục vụ nóng.
+22,Có món lạnh không?,Hầu hết đồ uống đều có phiên bản lạnh hoặc đá.
+23,Có món cho trẻ em không?,Khách có thể chọn một số món ít caffeine hoặc không caffeine.
+24,Có món chay không?,"Một số món ăn nhẹ có thể phù hợp, vui lòng hỏi nhân viên để xác nhận."
+25,Có nhận đặt số lượng lớn không?,Quán có thể hỗ trợ đơn số lượng lớn tùy chi nhánh.
+26,Có hỗ trợ sinh nhật không?,Chính sách hỗ trợ sinh nhật phụ thuộc từng chương trình.
 27,Có giới hạn thời gian ngồi không?,Thông thường không giới hạn nếu quán không quá đông.
 28,Có nhận thanh toán công ty không?,Quán có hỗ trợ hóa đơn theo thông tin khách cung cấp.
 29,Có chương trình thành viên không?,Chương trình thành viên phụ thuộc chính sách hiện hành.
