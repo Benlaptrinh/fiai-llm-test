@@ -88,6 +88,18 @@ class SimpleCache:
         for phrase, canonical in synonym_map.items():
             normalized = normalized.replace(phrase, canonical)
 
+        # Canonicalize common intent buckets after phrase replacement.
+        if "wifi" in normalized:
+            normalized = "wifi"
+        elif "giờ mở cửa" in normalized:
+            normalized = "giờ mở cửa"
+        elif "giờ đóng cửa" in normalized:
+            normalized = "giờ đóng cửa"
+        elif "thanh toán" in normalized:
+            normalized = "thanh toán"
+        elif "gợi ý" in normalized or "ít ngọt" in normalized:
+            normalized = "gợi ý ít ngọt"
+
         return normalized
 
     def get(self, query: str) -> Optional[Dict[str, Any]]:
