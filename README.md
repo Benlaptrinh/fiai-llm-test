@@ -140,6 +140,32 @@ export OPENAI_COMPAT_MODEL=Qwen/Qwen2.5-7B-Instruct
 
 This allows migration to RTX 3060 serving without changing router, agent, RAG, session, cache, or API layers.
 
+## Graph RAG Lite
+The system includes a Neo4j-based Graph RAG lite layer.
+
+Graph nodes:
+- `MenuItem`
+- `FAQ`
+- `DocChunk`
+- `Category`
+- `Sweetness`
+- `Caffeine`
+
+Graph retrieval is combined with ChromaDB vector retrieval.
+Neo4j is used to demonstrate structured knowledge retrieval and production extensibility.
+
+Run Neo4j:
+
+```bash
+docker compose up -d neo4j
+python scripts/ingest.py
+```
+
+When Neo4j is available, retrieved `sources` may include graph domains such as:
+- `graph_menu`
+- `graph_faq`
+- `graph_doc`
+
 ## Benchmark
 Run:
 ```bash
@@ -165,6 +191,7 @@ Ollama runs on the host machine. The API can run in Docker:
 
 ```bash
 docker compose build
+docker compose up -d neo4j redis
 docker compose run --rm api python scripts/ingest.py
 docker compose up
 ```
@@ -174,6 +201,23 @@ Health check:
 ```bash
 curl http://127.0.0.1:8000/health
 ```
+
+Expected health payload includes:
+- `graph_rag_enabled`
+- `cache_backend`
+
+## Redis Cache
+The cache layer supports Redis with memory fallback.
+
+```bash
+docker compose up -d redis
+```
+
+If Redis is available, `/health` returns:
+- `"cache_backend": "redis"`
+
+If Redis is unavailable, the system automatically falls back to in-memory cache:
+- `"cache_backend": "memory"`
 
 ## Demo Evidence
 Real API responses for order, consultant, FAQ, ignore, and repeated FAQ cache-hit are saved in:
