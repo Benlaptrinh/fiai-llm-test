@@ -1,0 +1,16 @@
+{
+  "model": "Qwen/Qwen2.5-0.5B",
+  "device": "mps",
+  "dtype": "float16",
+  "epochs": 3,
+  "effective_batch": 8,
+  "train_samples": 3133,
+  "eval_samples": 783,
+  "train_time_min": 55.3,
+  "lora_r": 8,
+  "lora_alpha": 16,
+  "max_seq_len": 256,
+  "framework": "transformers + peft + MPS",
+  "system_prompt_tokens": 21,
+  "fix": "short system prompt + max_length padding in map"
+}

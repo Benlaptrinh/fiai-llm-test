@@ -24,7 +24,11 @@ from pathlib import Path
 from typing import Dict
 
 import joblib
+import re
 import requests
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel
 
 from app.config import (
     OLLAMA_BASE_URL,
@@ -34,7 +38,12 @@ from app.config import (
 )
 
 ROUTER_MODEL_PATH = Path("models/router_model.joblib")
+LORA_MODEL_DIR = Path("models/router_sft")
+BASE_MODEL_NAME = "Qwen/Qwen2.5-0.5B"
+
 _learned_router_model = None
+_lora_model = None
+_lora_tokenizer = None
 VALID_INTENTS = {"order", "consultant", "faq", "ignore"}
 
 ORDER_KEYWORDS = [
@@ -136,24 +145,93 @@ def load_learned_router():
         return None
 
 
-def classify_intent_learned(query: str) -> Dict[str, str]:
-    """
-    Classify query using trained lightweight model with confidence threshold.
-    """
-    model = load_learned_router()
+def _load_lora_model():
+    """Load fine-tuned LoRA model (lazy singleton)."""
+    global _lora_model, _lora_tokenizer
+    if _lora_model is not None:
+        return True
 
+    if not LORA_MODEL_DIR.exists():
+        return False
+
+    try:
+        device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        tokenizer = AutoTokenizer.from_pretrained(
+            LORA_MODEL_DIR, trust_remote_code=True
+        )
+        tokenizer.pad_token = tokenizer.eos_token
+
+        base = AutoModelForCausalLM.from_pretrained(
+            BASE_MODEL_NAME,
+            torch_dtype=torch.float16,
+            trust_remote_code=True,
+        )
+        base.config.pad_token_id = tokenizer.pad_token_id
+        base = base.to(device)
+
+        model = PeftModel.from_pretrained(base, LORA_MODEL_DIR)
+        model.eval()
+
+        _lora_tokenizer = tokenizer
+        _lora_model = model
+        _lora_device = device
+        return True
+    except Exception:
+        _lora_model = None
+        return False
+
+
+SYSTEM_PROMPT = "Classify into: order / consultant / faq / ignore. Return JSON only {\"action\":\"...\"}."
+
+
+def classify_intent_lora(query: str) -> Dict[str, str]:
+    """Classify using fine-tuned LoRA model on MPS."""
+    if not _load_lora_model():
+        return {}
+
+    try:
+        text = (
+            "<|im_start|>system\n" + SYSTEM_PROMPT + "<|im_end|>"
+            "<|im_start|>user\n" + query + "<|im_end|>"
+            "<|im_start|>assistant\n"
+        )
+        inputs = _lora_tokenizer(
+            text, return_tensors="pt", truncation=True, max_length=256
+        )
+        inputs = {k: v.to(_lora_device) for k, v in inputs.items()}
+        with torch.no_grad():
+            out = _lora_model.generate(
+                **inputs,
+                max_new_tokens=25,
+                do_sample=False,
+                pad_token_id=_lora_tokenizer.pad_token_id,
+            )
+        response = _lora_tokenizer.decode(
+            out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True
+        )
+        match = re.search(r'\{"action"\s*:\s*"([^"]+)"\}', response)
+        if match:
+            action = match.group(1)
+            if action in VALID_INTENTS:
+                return {"action": action, "method": "lora_sft"}
+    except Exception:
+        pass
+    return {}
+
+
+def classify_intent_learned(query: str) -> Dict[str, str]:
+    """Classify query using TF-IDF + LogReg model with confidence threshold."""
+    model = load_learned_router()
     if model is None:
         return {}
 
     try:
         intent = model.predict([query])[0]
-
         confidence = None
         if hasattr(model, "predict_proba"):
             probabilities = model.predict_proba([query])[0]
             confidence = float(max(probabilities))
 
-        # Fall back to rule-based routing on uncertain predictions.
         if confidence is not None and confidence < 0.50:
             return {}
 
@@ -232,6 +310,8 @@ def classify_intent(text: str) -> Dict[str, str]:
     """
     Classify user query into 4 intents.
 
+    Priority: Fine-tuned LoRA (SFT) > Ollama SLM > Learned TF-IDF > Rule-based
+
     Args:
         text: user input
 
@@ -243,10 +323,17 @@ def classify_intent(text: str) -> Dict[str, str]:
     if not query or len(query) <= 2:
         return {"action": "ignore", "method": "rule_based"}
 
+    # 1. Fine-tuned LoRA (SFT on Qwen2.5-0.5B) — primary router
+    lora_result = classify_intent_lora(text)
+    if lora_result:
+        return lora_result
+
+    # 2. Ollama SLM fallback
     slm_result = classify_intent_slm(text)
     if slm_result:
         return slm_result
 
+    # 3. Learned router (TF-IDF + LogReg)
     learned_result = classify_intent_learned(query)
     if learned_result:
         return learned_result
