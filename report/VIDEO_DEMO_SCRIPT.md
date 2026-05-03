@@ -141,11 +141,11 @@
 
 **ACTION:** Gõ:
 ```json
-{"query": "Tính tiền giúp tôi", "session_id": "demo-001"}
+{"query": "Hóa đơn bao nhiêu vậy", "session_id": "demo-001"}
 ```
 
 **SPEAK:**
-> "Bây giờ tôi yêu cầu tính tiền. Nhờ Turn 4 đã thêm món trước đó, hệ thống có đủ state để tổng hợp toàn bộ đơn: cà phê sữa đá + bánh croissants + trà đào. Đây là chain **Tạo → Sửa → Tính tiền** — proof rõ nhất của multi-turn stateful conversation."
+> "Bây giờ tôi hỏi hóa đơn. Nhờ Turn 4 đã thêm món trước đó, hệ thống tổng hợp toàn bộ đơn hàng. Đây là chain **Tạo → Sửa → Xem hóa đơn** — proof rõ nhất của multi-turn stateful conversation."
 
 **CHỜ** response. Khi thấy tổng tiền hiện ra:
 > "Hệ thống tổng hợp tất cả món và đưa ra tổng cộng."
@@ -193,7 +193,7 @@ curl -X POST http://localhost:8000/chat \
 # Turn 5: Order (tính tiền)
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{"query":"Tính tiền giúp tôi","session_id":"demo-001"}'
+  -d '{"query":"Hóa đơn bao nhiêu vậy","session_id":"demo-001"}'
 ```
 
 ---
