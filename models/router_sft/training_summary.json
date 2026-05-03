@@ -12,5 +12,7 @@
   "max_seq_len": 256,
   "framework": "transformers + peft + MPS",
   "system_prompt_tokens": 21,
-  "fix": "short system prompt + max_length padding in map"
+  "fix": "short system prompt + max_length padding in map",
+  "a1_2_checkpoint_resume": true,
+  "a1_2_usage": "python scripts/train_router_sft_v3.py --resume"
 }
