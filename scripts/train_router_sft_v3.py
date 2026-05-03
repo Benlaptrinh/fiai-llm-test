@@ -1,18 +1,32 @@
 """
-Full SFT training với FIX: system prompt rút gọn + tokenization đúng cách.
+Full SFT training với CHECKPOINT/RESUME support (A1.2).
 
-Fixes:
-1. System prompt rút gọn (target < 50 tokens thay vì 144)
-2. Tokenization: padding="max_length" trong map, KHÔNG dùng DataCollator pad
-3. train_samples sử dụng full response thay vì system prompt trong template
+Usage:
+  python scripts/train_router_sft_v3.py                        # fresh start
+  python scripts/train_router_sft_v3.py --resume               # auto-detect latest checkpoint
+  python scripts/train_router_sft_v3.py --resume-from checkpoint-275  # specific checkpoint
+
+A1.2: Checkpoint & Resume
+- Saves: adapter weights, optimizer, scheduler, RNG, trainer_state
+- Trainer handles resume via resume_from_checkpoint parameter
+- Auto-detects latest checkpoint if --resume is passed
 """
 
-import json, time
+import argparse
+import json
+import time
 from pathlib import Path
+
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
-from peft import LoraConfig, get_peft_model, TaskType
 from datasets import Dataset
+from peft import LoraConfig, get_peft_model, TaskType
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    DefaultDataCollator,
+    Trainer,
+    TrainingArguments,
+)
 
 MODEL = "Qwen/Qwen2.5-0.5B"
 OUT = Path("models/router_sft")
@@ -21,64 +35,33 @@ TEST_F = Path("data/router_sft_test.jsonl")
 
 BS = 2
 GA = 4
-EPOCHS = 3
+DEFAULT_EPOCHS = 3
 LR = 2e-4
 MAX_SEQ = 256
 SEED = 42
 
 device = torch.device("mps")
 
-# ── Rút gọn system prompt ──────────────────────────────────────────────────
-# Trước: 144 tokens. Sau: < 50 tokens
-SYSTEM_PROMPT = """Classify into: order / consultant / faq / ignore. Return JSON only {"action":"..."}."""
+SYSTEM_PROMPT = (
+    "Classify into: order / consultant / faq / ignore. "
+    'Return JSON only {"action":"..."}.'
+)
 
 INTENTS = ["order", "consultant", "faq", "ignore"]
 
-# ── Tokenizer ────────────────────────────────────────────────────────────────
-print("Loading tokenizer...")
-tok = AutoTokenizer.from_pretrained(MODEL, trust_remote_code=True, padding_side="right")
-tok.pad_token = tok.eos_token
 
-# ── Model ──────────────────────────────────────────────────────────────────
-print("Loading model...")
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL, torch_dtype=torch.float16, device_map={"": device}, trust_remote_code=True
-)
-model.config.pad_token_id = tok.pad_token_id
-
-# ── LoRA ───────────────────────────────────────────────────────────────────
-print("Applying LoRA...")
-model = get_peft_model(model, LoraConfig(
-    r=8, lora_alpha=16, lora_dropout=0.05,
-    target_modules=["q_proj","k_proj","v_proj","o_proj"],
-    bias="none", task_type=TaskType.CAUSAL_LM,
-))
-model.print_trainable_parameters()
-
-# ── Load data ────────────────────────────────────────────────────────────────
 def load_jsonl(path):
     out = []
-    with open(path) as f:
+    with path.open(encoding="utf-8") as f:
         for line in f:
             out.append(json.loads(line))
     return out
 
-print("Loading data...")
-train_msgs = load_jsonl(TRAIN_F)
-test_msgs = load_jsonl(TEST_F)
-print(f"Train: {len(train_msgs)}, Eval: {len(test_msgs)}")
 
-# ── Format: user msg + system prompt, assistant = label ─────────────────────────
 def format_sample(example):
-    """Format để training: KHÔNG include system message trong chat template.
-    Đặt system prompt ngắn TRƯỚC user message nhưng KHÔNG dùng chat template.
-    Assistant response = JSON label.
-    """
     user_text = example["messages"][1]["content"]
     action = json.loads(example["messages"][2]["content"])["action"]
     assistant_response = f'{{"action":"{action}"}}'
-
-    # Build: <|im_start|>system\n(short prompt)<|im_end|><|im_start|>user\n{query}<|im_end|><|im_start|>assistant\n{response}<|im_end|>
     full_text = (
         f"{tok.bos_token}"
         f"<|im_start|>system\n{SYSTEM_PROMPT}<|im_end|>"
@@ -87,16 +70,67 @@ def format_sample(example):
     )
     return {"text": full_text}
 
+
 def tokenize_fn(example):
-    """Tokenize, pad to MAX_SEQ, set labels = input_ids (causal LM)."""
     result = tok(
         example["text"],
         max_length=MAX_SEQ,
         truncation=True,
-        padding="max_length",  # pad all to MAX_SEQ for fixed tensor shapes
+        padding="max_length",
     )
     result["labels"] = result["input_ids"][:]
     return result
+
+
+# ── CLI ─────────────────────────────────────────────────────────────────
+parser = argparse.ArgumentParser()
+parser.add_argument("--resume", action="store_true",
+                   help="Resume from latest checkpoint in OUTPUT_DIR")
+parser.add_argument("--resume-from", type=str, default=None,
+                   help="Resume from a specific checkpoint path")
+parser.add_argument("--epochs", type=int, default=DEFAULT_EPOCHS,
+                   help="Number of epochs (default: %(default)s)")
+args_cli = parser.parse_args()
+
+# Resolve resume path
+resume_path = None
+if args_cli.resume_from:
+    resume_path = Path(args_cli.resume_from)
+elif args_cli.resume:
+    if OUT.exists():
+        checkpoints = sorted(OUT.glob("checkpoint-*"))
+        if checkpoints:
+            resume_path = checkpoints[-1]
+            print(f"[A1.2] Auto-detected latest checkpoint: {resume_path}")
+        else:
+            print("[A1.2] Warning: --resume but no checkpoints found. Starting fresh.")
+    else:
+        print("[A1.2] Warning: OUTPUT_DIR does not exist. Starting fresh.")
+
+# ── Tokenizer & Model ───────────────────────────────────────────────────
+print("Loading tokenizer...")
+tok = AutoTokenizer.from_pretrained(MODEL, trust_remote_code=True, padding_side="right")
+tok.pad_token = tok.eos_token
+
+print("Loading model...")
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL, torch_dtype=torch.float16, device_map={"": device}, trust_remote_code=True
+)
+model.config.pad_token_id = tok.pad_token_id
+
+print("Applying LoRA...")
+model = get_peft_model(model, LoraConfig(
+    r=8, lora_alpha=16, lora_dropout=0.05,
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+    bias="none", task_type=TaskType.CAUSAL_LM,
+))
+model.print_trainable_parameters()
+
+# ── Data ────────────────────────────────────────────────────────────────
+print("Loading data...")
+train_msgs = load_jsonl(TRAIN_F)
+test_msgs = load_jsonl(TEST_F)
+print(f"Train: {len(train_msgs)}, Eval: {len(test_msgs)}")
 
 print("Formatting & tokenizing...")
 train_ds = Dataset.from_list([format_sample(x) for x in train_msgs])
@@ -105,37 +139,26 @@ test_ds = Dataset.from_list([format_sample(x) for x in test_msgs])
 train_tok = train_ds.map(tokenize_fn, remove_columns=["text"], desc="Tokenizing train")
 test_tok = test_ds.map(tokenize_fn, remove_columns=["text"], desc="Tokenizing eval")
 
-# Verify lengths
-sample_len = len(train_tok[0]["input_ids"])
-max_len = max(len(train_tok[i]["input_ids"]) for i in range(min(5, len(train_tok))))
-print(f"Sample length: {sample_len}, Max of first 5: {max_len}, MAX_SEQ: {MAX_SEQ}")
+print(f"Train: {len(train_tok)}, Eval: {len(test_tok)}")
 
-# Check padding
-padded_count = sum(1 for i in range(len(train_tok)) if train_tok[i]["input_ids"][-1] == tok.pad_token_id)
-print(f"Padded samples: {padded_count}/{len(train_tok)}")
-
-print(f"Train tokens: {len(train_tok)}, Eval tokens: {len(test_tok)}")
-
-# ── DataCollator: KHÔNG pad again (đã pad trong map) ──────────────────────
-# Dùng custom collator hoặc DefaultDataCollator để tránh double-padding
-from transformers import DefaultDataCollator
 collator = DefaultDataCollator(return_tensors="pt")
 
-# ── Train ───────────────────────────────────────────────────────────────────
+# ── Training args ───────────────────────────────────────────────────────
 OUT.mkdir(parents=True, exist_ok=True)
-args = TrainingArguments(
+trainer_args = TrainingArguments(
     output_dir=str(OUT),
     per_device_train_batch_size=BS,
     per_device_eval_batch_size=BS,
     gradient_accumulation_steps=GA,
-    num_train_epochs=EPOCHS,
+    num_train_epochs=args_cli.epochs,
     learning_rate=LR,
     warmup_ratio=0.1,
     logging_steps=50,
     eval_strategy="epoch",
     save_strategy="epoch",
     save_total_limit=1,
-    bf16=False, fp16=False,
+    bf16=False,
+    fp16=False,
     gradient_checkpointing=True,
     optim="adamw_torch",
     weight_decay=0.01,
@@ -147,33 +170,73 @@ args = TrainingArguments(
 )
 
 trainer = Trainer(
-    model=model, args=args,
-    train_dataset=train_tok, eval_dataset=test_tok,
+    model=model,
+    args=trainer_args,
+    train_dataset=train_tok,
+    eval_dataset=test_tok,
     data_collator=collator,
 )
 
-print(f"\nTraining: {EPOCHS} epochs, effective batch={BS*GA}")
+# ── Train ────────────────────────────────────────────────────────────
+epochs_display = args_cli.epochs
+if resume_path:
+    # Load trainer state to show resume point
+    state_path = resume_path / "trainer_state.json"
+    if state_path.exists():
+        with open(state_path) as f:
+            saved = json.load(f)
+        done_epochs = saved.get("epoch", 0)
+        done_steps = saved.get("global_step", 0)
+        remaining = args_cli.epochs - done_epochs
+        print(f"\n[A1.2] Resuming from: {resume_path}")
+        print(f"  Epochs done: {done_epochs:.2f}, Steps done: {done_steps}")
+        print(f"  Remaining epochs: {remaining:.2f}")
+        print(f"  Will train for {args_cli.epochs} total epochs (Trainer continues from checkpoint)")
+    else:
+        print(f"\n[A1.2] Resuming from: {resume_path}")
+else:
+    if args_cli.resume:
+        print("\n[A1.2] Starting fresh (no checkpoints found).")
+    else:
+        print(f"\n[A1.2] Starting fresh training ({args_cli.epochs} epochs).")
+
+print(f"\nTraining: {args_cli.epochs} epochs, effective batch={BS*GA}")
 print(f"System prompt tokens: ~{len(tok(SYSTEM_PROMPT)['input_ids'])}")
+
 t0 = time.time()
-trainer.train()
+
+# A1.2: The key line — Trainer handles ALL checkpoint loading automatically
+trainer.train(resume_from_checkpoint=str(resume_path) if resume_path else None)
+
 elapsed = time.time() - t0
 print(f"\nDone in {elapsed/60:.1f} min")
 
-# Save
+# ── Save ────────────────────────────────────────────────────────────
 trainer.save_model(str(OUT))
 tok.save_pretrained(str(OUT))
 
+# ── Summary ──────────────────────────────────────────────────────────
+total_steps = trainer.state.global_step
 summary = {
-    "model": MODEL, "device": "mps", "dtype": "float16",
-    "epochs": EPOCHS, "effective_batch": BS*GA,
-    "train_samples": len(train_tok), "eval_samples": len(test_tok),
-    "train_time_min": round(elapsed/60, 1),
-    "lora_r": 8, "lora_alpha": 16, "max_seq_len": MAX_SEQ,
+    "model": MODEL,
+    "device": "mps",
+    "dtype": "float16",
+    "epochs": args_cli.epochs,
+    "effective_batch": BS * GA,
+    "train_samples": len(train_tok),
+    "eval_samples": len(test_tok),
+    "train_time_min": round(elapsed / 60, 1),
+    "lora_r": 8,
+    "lora_alpha": 16,
+    "max_seq_len": MAX_SEQ,
     "framework": "transformers + peft + MPS",
     "system_prompt_tokens": len(tok(SYSTEM_PROMPT)["input_ids"]),
     "fix": "short system prompt + max_length padding in map",
+    "a1_2_checkpoint_resume": True,
+    "total_steps_trained": total_steps,
+    "resume_from": str(resume_path) if resume_path else None,
 }
-with open(OUT/"training_summary.json","w") as f:
+with open(OUT / "training_summary.json", "w", encoding="utf-8") as f:
     json.dump(summary, f, indent=2)
-print(f"Summary: {summary}")
+print(f"\nSummary: total_steps={total_steps}, time={round(elapsed/60,1)}min")
 print("\nDone!")

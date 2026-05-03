@@ -57,8 +57,9 @@ SEMANTIC_CACHE_THRESHOLD = float(os.getenv("SEMANTIC_CACHE_THRESHOLD", "0.88"))
 
 SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "1800"))
 MAX_HISTORY_TURNS = int(os.getenv("MAX_HISTORY_TURNS", "5"))
-# Auto-summarize when history exceeds this many tokens (~70% of 4096 context window)
-SESSION_SUMMARY_THRESHOLD_TOKENS = int(os.getenv("SESSION_SUMMARY_THRESHOLD_TOKENS", "2800"))
+# A2.2: Auto-summarize when conversation exceeds this many turns
+# ~15 turns ≈ 750 tokens for Vietnamese, triggers before context window fills
+SESSION_SUMMARY_THRESHOLD_TOKENS = int(os.getenv("SESSION_SUMMARY_THRESHOLD_TOKENS", "15"))
 
 MAX_CONCURRENT_LLM_REQUESTS = int(os.getenv("MAX_CONCURRENT_LLM_REQUESTS", "2"))
 QUEUE_TIMEOUT_SECONDS = int(os.getenv("QUEUE_TIMEOUT_SECONDS", "60"))
