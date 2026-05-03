@@ -126,7 +126,7 @@
 ```
 
 **SPEAK:**
-> "Tôi tiếp tục thêm món vào đơn hàng — vẫn cùng session. Hệ thống nhận ra đây là intent order ở chế độ modify, và nhớ đơn từ Turn 2: cà phê sữa đá size M và bánh croissants. Agent bổ sung món mới vào đơn."
+> "Tôi tiếp tục thêm món vào đơn hàng — vẫn cùng session. Hệ thống nhận ra đây là intent order ở chế độ modify. Agent truy xuất menu từ Neo4j và bổ sung trà đào vào đơn."
 
 **CHỜ** response. Khi thấy `"intent": "order"` + danh sách đơn cập nhật:
 > "Hệ thống nhận diện đơn hiện tại và bổ sung trà đào. Đây chính là proof rằng multi-turn **nhớ state**."
@@ -141,14 +141,14 @@
 
 **ACTION:** Gõ:
 ```json
-{"query": "Hóa đơn bao nhiêu vậy", "session_id": "demo-001"}
+{"query": "Kiểm tra đơn đã đặt", "session_id": "demo-001"}
 ```
 
 **SPEAK:**
-> "Bây giờ tôi hỏi hóa đơn. Nhờ Turn 4 đã thêm món trước đó, hệ thống tổng hợp toàn bộ đơn hàng. Đây là chain **Tạo → Sửa → Xem hóa đơn** — proof rõ nhất của multi-turn stateful conversation."
+> "Bây giờ tôi yêu cầu kiểm tra đơn. Hệ thống nhớ đơn từ Turn 4 (trà dâu + trà đào) và trả về danh sách. Đây là proof của multi-turn stateful session — hệ thống duy trì context xuyên suốt qua nhiều turns trong cùng session."
 
-**CHỜ** response. Khi thấy tổng tiền hiện ra:
-> "Hệ thống tổng hợp tất cả món và đưa ra tổng cộng."
+**CHỜ** response. Khi thấy danh sách đơn:
+> "Hệ thống trả về đơn hàng hiện tại trong session."
 
 **MÀN HÌNH:** Zoom vào nội dung tổng tiền.
 
@@ -193,7 +193,7 @@ curl -X POST http://localhost:8000/chat \
 # Turn 5: Order (tính tiền)
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
-  -d '{"query":"Hóa đơn bao nhiêu vậy","session_id":"demo-001"}'
+  -d '{"query":"Kiểm tra đơn đã đặt","session_id":"demo-001"}'
 ```
 
 ---
