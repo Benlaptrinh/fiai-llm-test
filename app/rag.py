@@ -58,6 +58,7 @@ def _rerank_documents(
     documents: List[Dict[str, Any]],
     top_k: int = 5,
     min_score: float = 0.0,
+    keyword_boost_weight: float = 0.0,
 ) -> List[Dict[str, Any]]:
     """
     Rerank documents using BGE Reranker v2.
@@ -67,6 +68,7 @@ def _rerank_documents(
         documents: list of documents with 'text' key
         top_k: number of top results to return after reranking
         min_score: minimum relevance score threshold (0.0 = no filter)
+        keyword_boost_weight: weight for keyword boost score (0.0 = disabled)
 
     Returns:
         reranked documents with 'rerank_score' added
@@ -86,9 +88,20 @@ def _rerank_documents(
         scored_docs = []
         for doc, score in zip(documents, scores):
             doc = dict(doc)
-            doc["rerank_score"] = float(score)
-            if score >= min_score:
-                scored_docs.append(doc)
+            base_score = float(score)
+            # If keyword boost is significant, use it directly to override reranker score
+            # This ensures exact name matches always surface regardless of embedding quality
+            kb = doc.get("_keyword_boost", 0)
+            if kb >= 1.0:
+                doc["rerank_score"] = kb + base_score * 0.2
+            elif keyword_boost_weight > 0 and kb > 0:
+                doc["rerank_score"] = (
+                    base_score * (1 - keyword_boost_weight)
+                    + kb * keyword_boost_weight
+                )
+            else:
+                doc["rerank_score"] = base_score
+            scored_docs.append(doc)
 
         scored_docs.sort(key=lambda d: d["rerank_score"], reverse=True)
         return scored_docs[:top_k]
@@ -158,6 +171,9 @@ class RAGStore:
                     distance = result["distances"][0][i]
                 docs.append({"text": doc, "metadata": metadata, "distance": distance})
 
+        # Keyword boost: if query mentions a known menu item name, boost it
+        docs = self._keyword_boost(query, docs)
+
         # Apply reranking if enabled
         if use_reranker and docs:
             docs = _rerank_documents(
@@ -165,9 +181,44 @@ class RAGStore:
                 documents=docs,
                 top_k=rerank_top_k,
                 min_score=rerank_min_score,
+                keyword_boost_weight=0.95,
             )
 
         return docs
+
+    def _keyword_boost(
+        self, query: str, docs: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Boost documents where item name matches a keyword from the query.
+        Prevents truncation from hiding relevant items when embedding similarity
+        is slightly below threshold.
+        """
+        import re
+
+        query_lower = query.lower()
+        # Extract meaningful tokens (words >= 2 chars)
+        query_tokens = re.findall(r"\b[\wÀ-ỹ]{2,}\b", query_lower)
+
+        boosted = []
+        for doc in docs:
+            name_lower = doc["metadata"].get("name", "").lower()
+            score = 0.0
+            # Check for substring match first (e.g. "trà đào" in "trà đào cam sả")
+            for token in query_tokens:
+                if token in name_lower:
+                    score += 2.0  # Substring match gets strong boost
+            # If no substring match, do token-level boost
+            if score == 0:
+                for token in query_tokens:
+                    if any(token in w for w in name_lower.split()):
+                        score += 1.0
+            doc = dict(doc)
+            doc["_keyword_boost"] = score
+            boosted.append((score, doc))
+
+        boosted.sort(key=lambda x: (-x[0], x[1].get("distance", 999) or 999))
+        return [d for _, d in boosted]
 
     def count(self) -> int:
         """Count all documents in vector store."""

@@ -1,0 +1,76 @@
+{
+  "info": {
+    "name": "FI-AI 5-Turn Demo",
+    "description": "5-turn multi-agent demo — cùng session_id: demo-001",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "T1 — Consultant",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/chat", "host": ["{{baseUrl}}"], "path": ["chat"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"query\": \"Có gì ngon không?\",\n    \"session_id\": \"demo-001\"\n}"
+        }
+      }
+    },
+    {
+      "name": "T2 — Order (cà phê + bánh)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/chat", "host": ["{{baseUrl}}"], "path": ["chat"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"query\": \"Cho anh 1 ly cà phê sữa đá size M, thêm 1 bánh croissants\",\n    \"session_id\": \"demo-001\"\n}"
+        }
+      }
+    },
+    {
+      "name": "T3 — FAQ (wifi)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/chat", "host": ["{{baseUrl}}"], "path": ["chat"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"query\": \"Wifi tên gì vậy?\",\n    \"session_id\": \"demo-001\"\n}"
+        }
+      }
+    },
+    {
+      "name": "T4 — Order (thêm trà đào)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/chat", "host": ["{{baseUrl}}"], "path": ["chat"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"query\": \"Thêm 1 ly trà đào size L vào đơn\",\n    \"session_id\": \"demo-001\"\n}"
+        }
+      }
+    },
+    {
+      "name": "T5 — Order (kiểm tra đơn)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/chat", "host": ["{{baseUrl}}"], "path": ["chat"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"query\": \"Kiểm tra đơn đã đặt\",\n    \"session_id\": \"demo-001\"\n}"
+        }
+      }
+    }
+  ]
+}

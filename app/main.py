@@ -277,6 +277,10 @@ async def startup():
     faq_agent = FAQAgent(rag_store, graph_rag_store)
     ignore_agent = IgnoreAgent(rag_store, graph_rag_store)
 
+    # A2.2: Wire session_store into agents for structured order state
+    from app.agents import init_agents_session_store
+    init_agents_session_store(session_store)
+
     # C2.2: Check data files and invalidate cache if needed
     _invalidate_if_data_changed()
 
@@ -298,6 +302,84 @@ def hybrid_retrieve(query: str, intent: str, top_k: int = 5):
     vector_docs = rag_store.search(query, intent=intent, top_k=top_k)
     combined = graph_docs + vector_docs
     return combined[: top_k * 2]
+
+
+import re
+
+
+def _update_order_state(session_id: str, answer: str) -> None:
+    """
+    Parse order items from LLM answer text and store in session order state.
+    Handles formats like:
+      "1. Cà Phê: 1 ly (size M): 60,000 VND"
+      "- 1 ly Trà Đào Size L: 55,000 VND"
+      "NAME: 60,000 VND"
+    """
+    items = []
+    lines = answer.split("\n")
+
+    # First pass: collect all price contexts for fallback matching
+    price_map: Dict[str, int] = {}
+    for line in lines:
+        m = re.search(r"([\d,]+)\s*VND", line, re.IGNORECASE)
+        if m:
+            price = int(m.group(1).replace(",", ""))
+            ctx = re.sub(r"^[\d.\-)\s]+", "", line).split(":")[0].strip()
+            price_map[ctx] = price
+
+    # Second pass: match item lines
+    for raw in lines:
+        line = raw.strip()
+        # Strip leading "1.", "2.", "- ", etc.
+        m_strip = re.match(r"^[\d.\-)\s]+\s*(.+)$", line, re.IGNORECASE)
+        if not m_strip:
+            continue
+        content = m_strip.group(1).strip()
+        if not content:
+            continue
+
+        qty, name, size, price = 1, "", "", 0
+
+        # Format A: "NAME: 1 ly (size M): 60,000 VND" or "NAME: 1 ly Size M: 60,000 VND"
+        m = re.match(
+            r"^(.+?)\s*:\s*(?:(\d+)\s+(?:ly\s+|bánh\s+))?(?:\(\s*size\s+(\w+)\s*\)|size\s+(\w+))?\s*:\s*([\d,]+)\s*VND",
+            content,
+            re.IGNORECASE,
+        )
+        if m:
+            name = m.group(1).strip()
+            qty = int(m.group(2)) if m.group(2) else 1
+            size = (m.group(3) or m.group(4) or "").strip()
+            price = int(m.group(5).replace(",", ""))
+        else:
+            # Format B: "NAME: 1 ly: 60,000 VND" or "NAME: 60,000 VND"
+            m = re.match(
+                r"^(.+?)\s*:\s*(?:(\d+)\s+(?:ly\s+|bánh\s+))?:?\s*([\d,]+)\s*VND",
+                content,
+                re.IGNORECASE,
+            )
+            if m:
+                name = m.group(1).strip()
+                qty = int(m.group(2)) if m.group(2) else 1
+                price = int(m.group(3).replace(",", ""))
+            else:
+                # Format C: match by name in price_map
+                for ctx, val in price_map.items():
+                    if ctx.lower() in content.lower() or content.lower() in ctx.lower():
+                        price = val
+                        name = re.sub(r"\s*[\d:,].*", "", content).strip()
+                        break
+
+        if name and price > 0:
+            items.append({
+                "name": name,
+                "size": size,
+                "quantity": qty,
+                "price": price,
+            })
+
+    if items:
+        session_store._update_order_from_items(session_id, items)
 
 
 # ── Health & cache endpoints ───────────────────────────────────────────────
@@ -327,6 +409,19 @@ def invalidate_cache() -> dict:
 def cache_stats() -> dict:
     """Return cache statistics."""
     return cache.stats()
+
+
+@app.get("/session/{session_id}")
+def get_session(session_id: str) -> dict:
+    """Return session history for debugging."""
+    history = session_store.get_history(session_id)
+    summary = session_store.get_memory_summary(session_id)
+    return {
+        "session_id": session_id,
+        "turns": len(history),
+        "history": history,
+        "memory_summary": summary,
+    }
 
 
 # ── Chat endpoints ──────────────────────────────────────────────────────────
@@ -367,7 +462,9 @@ def process_chat_request(request: ChatRequest) -> ChatResponse:
     history = session_store.get_history(request.session_id)
 
     if intent == "order":
-        result = order_agent.answer(query_for_agent, history)
+        result = order_agent.answer(query_for_agent, history, request.session_id)
+    elif intent == "check_order":
+        result = order_agent.answer_check_order(request.session_id)
     elif intent == "consultant":
         result = consultant_agent.answer(query_for_agent, history)
     elif intent == "faq":
@@ -382,6 +479,11 @@ def process_chat_request(request: ChatRequest) -> ChatResponse:
     session_store.add_turn(
         session_id=request.session_id, user=request.query, assistant=answer
     )
+
+    # Parse and store order state from LLM response
+    # Accumulates items: keeps existing order, adds new items from this turn
+    if intent == "order":
+        _update_order_state(request.session_id, answer)
 
     cache.set(
         request.query,
@@ -476,7 +578,10 @@ def chat_stream(request: ChatRequest) -> StreamingResponse:
     if intent in ("order", "consultant", "faq"):
         docs = hybrid_retrieve(query_for_agent, intent=intent, top_k=5)
     sources = format_sources(docs)
-    prompt = build_agent_prompt(intent, query_for_agent, history, docs)
+    prompt = build_agent_prompt(
+        intent, query_for_agent, history, docs,
+        session_id=request.session_id if intent == "order" else None,
+    )
 
     def event_stream():
         meta = {"type": "metadata", "intent": intent, "cached": False, "sources": sources}
@@ -495,6 +600,8 @@ def chat_stream(request: ChatRequest) -> StreamingResponse:
                                                   ensure_ascii=False) + "\n\n"
 
         session_store.add_turn(request.session_id, request.query, full_answer)
+        if intent == "order":
+            _update_order_state(request.session_id, full_answer)
         cache.set(request.query, {"intent": intent, "answer": full_answer, "sources": sources})
         yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
 

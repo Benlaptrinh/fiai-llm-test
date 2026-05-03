@@ -99,3 +99,8 @@ id,name,category,size,price,caffeine,sweetness,tags,ingredients,description
 98,Trà Sữa Trân Châu,Tea,M,50000,medium,high,"tea,fruit,refreshing,low-caffeine","trà, trái cây, syrup, đá","Trà Sữa Trân Châu size M, vị thanh mát, phù hợp khách thích đồ uống nhẹ."
 99,Trà Sữa Trân Châu,Tea,L,69000,low,medium,"tea,fruit,refreshing,low-caffeine","trà, trái cây, syrup, đá","Trà Sữa Trân Châu size L, vị thanh mát, phù hợp khách thích đồ uống nhẹ."
 100,Trà Lài Mật Ong,Tea,S,45000,medium,low,"tea,fruit,refreshing,low-caffeine","trà, trái cây, syrup, đá","Trà Lài Mật Ong size S, vị thanh mát, phù hợp khách thích đồ uống nhẹ."
+101,Croissants,Food,S,25000,medium,low,"pastry,không caffeine","bánh, pastry","Croissants size S, bánh bơ sữa giòn, 25,000 VND."
+102,Croissants,Food,M,35000,medium,low,"pastry,không caffeine","bánh, pastry","Croissants size M, bánh bơ sữa giòn, 35,000 VND."
+103,Tiramisu,Food,S,35000,medium,low,"dessert,không caffeine","bánh, dessert","Tiramisu size S, bánh kem cà phê Ý, 35,000 VND."
+104,Tiramisu,Food,M,45000,medium,low,"dessert,không caffeine","bánh, dessert","Tiramisu size M, bánh kem cà phê Ý, 45,000 VND."
+105,Bánh Mì Que,Food,S,15000,medium,low,"snack,không caffeine","bánh, snack","Bánh Mì Que size S, bánh mì baguette nướng, 15,000 VND."

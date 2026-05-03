@@ -105,6 +105,53 @@ class SessionStore:
         self.sessions[session_id]["last_seen"] = time.time()
         return self.sessions[session_id]["history"]
 
+    # ── Order state management ────────────────────────────────────────────────
+
+    def get_order_state(self, session_id: str) -> Dict[str, Any]:
+        """Return current order state for a session."""
+        self.cleanup()
+        if session_id not in self.sessions:
+            return {"items": [], "total": 0}
+        self.sessions[session_id]["last_seen"] = time.time()
+        return self.sessions[session_id].get(
+            "order_state", {"items": [], "total": 0}
+        )
+
+    def _update_order_from_items(
+        self, session_id: str, items: List[Dict[str, Any]]
+    ) -> None:
+        """Update order state with a list of items {name, size, quantity, price}."""
+        if session_id not in self.sessions:
+            self.sessions[session_id] = {
+                "history": [],
+                "last_seen": time.time(),
+                "memory_summary": None,
+                "total_turns": 0,
+            }
+        # Always recalculate total from item prices to avoid AI miscalculation
+        total = sum(
+            item.get("price", 0) * max(item.get("quantity", 1), 1)
+            for item in items
+        )
+        self.sessions[session_id]["order_state"] = {"items": items, "total": total}
+        self.sessions[session_id]["last_seen"] = time.time()
+
+    def format_order_summary(self, session_id: str) -> str:
+        """Return a formatted order summary string for a session."""
+        state = self.get_order_state(session_id)
+        if not state["items"]:
+            return "Hiện tại bạn chưa đặt món nào."
+        lines = []
+        for item in state["items"]:
+            qty = item.get("quantity", 1)
+            price = item.get("price", 0)
+            size = item.get("size", "")
+            name = item.get("name", "")
+            size_str = f" size {size}" if size else ""
+            lines.append(f"- {qty} {name}{size_str}: {price * qty:,} VND")
+        lines.append(f"Tổng cộng: {state['total']:,} VND")
+        return "\n".join(lines)
+
     def _total_tokens(self, history: List[Dict[str, str]]) -> int:
         """Estimate total tokens in history."""
         total = 0

@@ -44,15 +44,13 @@ BASE_MODEL_NAME = "Qwen/Qwen2.5-0.5B"
 _learned_router_model = None
 _lora_model = None
 _lora_tokenizer = None
-VALID_INTENTS = {"order", "consultant", "faq", "ignore"}
+VALID_INTENTS = {"order", "consultant", "faq", "ignore", "check_order"}
 
 ORDER_KEYWORDS = [
     "lấy",
     "mua",
-    "đặt",
     "order",
     "gọi",
-    "thêm",
     "tính tiền",
     "1 ly",
     "2 ly",
@@ -65,6 +63,41 @@ ORDER_KEYWORDS = [
     "size m",
     "size l",
     "size",
+    "đặt một",
+    "đặt hai",
+    "đặt luôn",
+    "trà đào",
+    "trà dâu",
+    "trà vải",
+    "trà sen",
+    "trà xoài",
+    "trà cam",
+    "trà chanh",
+    "matcha",
+    "mocha",
+    "latte",
+    "cappuccino",
+    "americano",
+    "espresso",
+    "bạc xỉu",
+    "phin sữa",
+    "croissants",
+    "bánh",
+]
+
+CHECK_ORDER_KEYWORDS = [
+    "kiểm tra đơn",
+    "xem đơn",
+    "đơn hàng",
+    "đơn đã",
+    "đơn của",
+    "đơn hiện",
+    "hóa đơn",
+    "xem giỏ",
+    "giỏ hàng",
+    "tổng đơn",
+    "đặt gì",
+    "order gì",
 ]
 
 CONSULTANT_KEYWORDS = [
@@ -337,6 +370,9 @@ def classify_intent(text: str) -> Dict[str, str]:
     learned_result = classify_intent_learned(query)
     if learned_result:
         return learned_result
+
+    if contains_any(query, CHECK_ORDER_KEYWORDS):
+        return {"action": "check_order", "method": "rule_based"}
 
     if contains_any(query, FAQ_KEYWORDS):
         return {"action": "faq", "method": "rule_based"}
