@@ -1,0 +1,24 @@
+{
+  "model": "Qwen/Qwen2.5-0.5B",
+  "device": "mps",
+  "dtype": "float16",
+  "epochs": 2,
+  "effective_batch": 8,
+  "train_samples": 2200,
+  "eval_samples": 800,
+  "train_time_min": 22.6,
+  "lora_r": 8,
+  "lora_alpha": 16,
+  "max_seq_len": 256,
+  "framework": "transformers + peft + Trainer + MPS",
+  "task": "C2.1 Intent Extraction (subject + action + context)",
+  "eval_loss": 0.2807,
+  "results": {
+    "full_accuracy": 0.5375,
+    "action_accuracy": 0.8462,
+    "subject_accuracy": 0.6262,
+    "context_accuracy": 0.9337,
+    "evaluated": 800,
+    "parse_errors": 0
+  }
+}
